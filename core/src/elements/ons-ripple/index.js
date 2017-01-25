@@ -15,14 +15,17 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import internal from 'ons/internal';
-import BaseElement from 'ons/base-element';
+import util from '../../ons/util';
+import internal from '../../ons/internal';
+import BaseElement from '../../ons/base-element';
 import Animator from './animator-css';
+import contentReady from '../../ons/content-ready';
+
+const defaultClassName = 'ripple';
 
 /**
  * @element ons-ripple
- * @category ripple
+ * @category visual
  * @description
  *   [en]
  *     Adds a Material Design "ripple" effect to an element. The ripple effect will spread from the position where the user taps.
@@ -32,14 +35,18 @@ import Animator from './animator-css';
  *   [ja]マテリアルデザインのリップル効果をDOM要素に追加します。[/ja]
  * @codepen wKQWdZ
  * @tutorial vanilla/Reference/ripple
+ * @guide cross-platform-styling
+ *  [en]Cross platform styling[/en]
+ *  [ja]Cross platform styling[/ja]
  * @example
  * <div class="my-div">
  *  <ons-ripple></ons-ripple>
  * </div>
  *
+ * @example
  * <ons-button ripple>Click me!</ons-button>
  */
-class RippleElement extends BaseElement {
+export default class RippleElement extends BaseElement {
 
   /**
    * @attribute color
@@ -64,14 +71,8 @@ class RippleElement extends BaseElement {
    *   [ja]この属性が設定された場合、リップルエフェクトは無効になります。[/ja]
    */
 
-  createdCallback() {
-    this.classList.add('ripple');
-    if (!this.hasAttribute('_compiled')) {
-      this._compile();
-    } else {
-      this._background = this.getElementsByClassName('ripple__background')[0];
-      this._wave = this.getElementsByClassName('ripple__wave')[0];
-    }
+  init() {
+    contentReady(this, () => this._compile());
 
     this._animator = new Animator();
 
@@ -81,12 +82,18 @@ class RippleElement extends BaseElement {
   }
 
   _compile() {
-    ['_wave', '_background'].forEach(e => {
-      this[e] = document.createElement('div');
-      this[e].classList.add('ripple_' + e);
-      this.appendChild(this[e]);
-    });
-    this.setAttribute('_compiled', '');
+    this.classList.add(defaultClassName);
+
+    this._wave = this.getElementsByClassName('ripple__wave')[0];
+    this._background = this.getElementsByClassName('ripple__background')[0];
+
+    if (!(this._background && this._wave)) {
+      this._wave = util.create('.ripple__wave');
+      this._background = util.create('.ripple__background');
+
+      this.appendChild(this._wave);
+      this.appendChild(this._background);
+    }
   }
 
   _calculateCoords(e) {
@@ -181,7 +188,7 @@ class RippleElement extends BaseElement {
     }
   }
 
-  attachedCallback() {
+  connectedCallback() {
     this._parentNode = this.parentNode;
     this._boundOnTap = this._onTap.bind(this);
     this._boundOnHold = this._onHold.bind(this);
@@ -197,35 +204,65 @@ class RippleElement extends BaseElement {
     }
   }
 
-  detachedCallback() {
-    this._parentNode.removeEventListener('tap', this._boundOnTap);
-    this._parentNode.removeEventListener('hold', this._boundOnHold);
-    this._parentNode.removeEventListener('dragstart', this._boundOnDragStart);
+  disconnectedCallback() {
+    const pn = this._parentNode || this.parentNode;
+    pn.removeEventListener('tap', this._boundOnTap);
+    pn.removeEventListener('hold', this._boundOnHold);
+    pn.removeEventListener('dragstart', this._boundOnDragStart);
+  }
+
+  static get observedAttributes() {
+    return ['start-radius', 'color', 'background', 'center', 'class'];
   }
 
   attributeChangedCallback(name, last, current) {
-    if (name === 'start-radius') {
-      this._minR = Math.max(0, parseFloat(current) || 0);
-    }
-    if (name === 'color' && current) {
-      this._wave.style.background = current;
-      if (!this.hasAttribute('background')) {
-        this._background.style.background = current;
-      }
-    }
-    if (name === 'background' && (current || last)) {
-      if (current === 'none') {
-        this._background.setAttribute('disabled', 'disabled');
-        this._background.style.background = 'transparent';
-      } else {
-        if (this._background.hasAttribute('disabled')) {
-          this._background.removeAttribute('disabled');
+    switch (name) {
+
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
         }
-        this._background.style.background = current;
-      }
-    }
-    if (name === 'center') {
-      this._center = current != null && current != 'false';
+        break;
+
+      case 'start-radius':
+        this._minR = Math.max(0, parseFloat(current) || 0);
+        break;
+
+      case 'color':
+        if (current) {
+          contentReady(this, () => {
+            this._wave.style.background = current;
+            if (!this.hasAttribute('background')) {
+              this._background.style.background = current;
+            }
+          });
+        }
+        break;
+
+      case 'background':
+        if (current || last) {
+          if (current === 'none') {
+            contentReady(this, () => {
+              this._background.setAttribute('disabled', 'disabled');
+              this._background.style.background = 'transparent';
+            });
+          } else {
+            contentReady(this, () => {
+              if (this._background.hasAttribute('disabled')) {
+                this._background.removeAttribute('disabled');
+              }
+              this._background.style.background = current;
+            });
+          }
+        }
+        break;
+
+      case 'center':
+        if (name === 'center') {
+          this._center = current != null && current != 'false';
+        }
+        break;
+
     }
   }
 
@@ -245,6 +282,4 @@ class RippleElement extends BaseElement {
   }
 }
 
-window.OnsRippleElement = document.registerElement('ons-ripple', {
-  prototype: RippleElement.prototype
-});
+customElements.define('ons-ripple', RippleElement);

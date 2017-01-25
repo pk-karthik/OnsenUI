@@ -15,16 +15,17 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
 
+const defaultClassName = 'bottom-bar';
 const scheme = {'': 'bottom-bar--*'};
 
 /**
  * @element ons-bottom-toolbar
- * @category toolbar
+ * @category page
  * @description
  *   [en]Toolbar component that is positioned at the bottom of the page.[/en]
  *   [ja]ページ下部に配置されるツールバー用コンポーネントです。[/ja]
@@ -32,15 +33,12 @@ const scheme = {'': 'bottom-bar--*'};
  *   [en]Make the toolbar transparent.[/en]
  *   [ja]ツールバーの背景を透明にして表示します。[/ja]
  * @seealso ons-toolbar [en]ons-toolbar component[/en][ja]ons-toolbarコンポーネント[/ja]
- * @guide Addingatoolbar
- *   [en]Adding a toolbar[/en]
- *   [ja]ツールバーの追加[/ja]
  * @example
  * <ons-bottom-toolbar>
  *   Content
  * </ons-bottom-toolbar>
  */
-class BottomToolbarElement extends BaseElement {
+export default class BottomToolbarElement extends BaseElement {
   /**
    * @attribute modifier
    * @type {String}
@@ -49,36 +47,34 @@ class BottomToolbarElement extends BaseElement {
    *   [ja]ツールバーの見た目の表現を指定します。[/ja]
    */
 
-  createdCallback() {
-    this.classList.add('bottom-bar');
-
+  init() {
+    this.classList.add(defaultClassName);
     ModifierUtil.initModifier(this, scheme);
-
-    this._tryToEnsureNodePosition();
-    setImmediate(() => this._tryToEnsureNodePosition());
   }
 
-  attachedCallback() {
-    this._tryToEnsureNodePosition();
-    setImmediate(() => this._tryToEnsureNodePosition());
-  }
-
-  _tryToEnsureNodePosition() {
-    const page = util.findParent(this, 'ons-page');
-
-    if (page && page !== this.parentNode) {
-      page._registerBottomToolbar(this);
+  connectedCallback() {
+    if (util.match(this.parentNode, 'ons-page')) {
+      this.parentNode.classList.add('page-with-bottom-toolbar');
     }
   }
 
+  static get observedAttributes() {
+    return ['modifier', 'class'];
+  }
+
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
-      ModifierUtil.onModifierChanged(last, current, this, scheme);
+    switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
+      case 'modifier':
+        ModifierUtil.onModifierChanged(last, current, this, scheme);
+        break;
     }
   }
 
 }
 
-window.OnsBottomToolbarElement = document.registerElement('ons-bottom-toolbar', {
-  prototype: BottomToolbarElement.prototype
-});
+customElements.define('ons-bottom-toolbar', BottomToolbarElement);

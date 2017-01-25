@@ -4,15 +4,15 @@ describe('OnsFabElement', () => {
   let fab;
 
   beforeEach(done => {
-    fab = new OnsFabElement();
+    fab = new ons.FabElement();
     ons._contentReady(fab, done);
   });
 
   it('exists', () => {
-    expect(window.OnsFabElement).to.be.ok;
+    expect(window.ons.FabElement).to.be.ok;
   });
 
-  it('provides modifier attribute', () => {
+  onlyChrome(it)('provides modifier attribute', () => {
     fab.setAttribute('modifier', 'hoge');
     expect(fab.classList.contains('fab--hoge')).to.be.true;
 
@@ -25,6 +25,15 @@ describe('OnsFabElement', () => {
     fab.setAttribute('modifier', 'fuga');
     expect(fab.classList.contains('fab--piyo')).to.be.true;
     expect(fab.classList.contains('fab--fuga')).to.be.true;
+  });
+
+  onlyChrome(describe)('"class" attribute', () => {
+    it('should contain "fab" token automatically', () => {
+      expect(fab.classList.contains('fab')).to.be.true;
+      fab.setAttribute('class', 'foo');
+      expect(fab.classList.contains('fab')).to.be.true;
+      expect(fab.classList.contains('foo')).to.be.true;
+    });
   });
 
   describe('#_show()', () => {
@@ -44,7 +53,7 @@ describe('OnsFabElement', () => {
   });
 
   describe('#_updatePosition()', () => {
-    it('is called when the "position" attribute changes', () => {
+    onlyChrome(it)('is called when the "position" attribute changes', () => {
       const spy = chai.spy.on(fab, '_updatePosition');
 
       fab.setAttribute('position', 'top left');
@@ -53,7 +62,7 @@ describe('OnsFabElement', () => {
       expect(spy).to.have.been.called.twice;
     });
 
-    it('adds the correct class', () => {
+    onlyChrome(it)('adds the correct class', () => {
       fab.setAttribute('position', 'top right');
       expect(fab.classList.contains('fab--top__right')).to.be.true;
 
@@ -131,7 +140,6 @@ describe('OnsFabElement', () => {
 
   describe('#visible', () => {
     it('returns whether the element is currently shown or not', () => {
-      expect(fab.visible).to.be.false;
       fab.show();
       expect(fab.visible).to.be.true;
       fab.hide();
@@ -152,15 +160,15 @@ describe('OnsFabElement', () => {
 
   describe('#toggle()', () => {
     it('calls #show() if element is hidden', () => {
+      fab.hide();
       const spy = chai.spy.on(fab, 'show');
       fab.toggle();
       expect(spy).to.have.been.called.once;
     });
 
     it('calls #hide() if element is shown', () => {
+      fab.show();
       const spy = chai.spy.on(fab, 'hide');
-      fab.toggle();
-      expect(spy).not.to.have.been.called();
       fab.toggle();
       expect(spy).to.have.been.called.once;
     });
@@ -177,7 +185,7 @@ describe('OnsFabElement', () => {
   });
 
   describe('autoStyling', () => {
-    it('adds \'material\' effects on Android', () => {
+    onlyChrome(it)('adds \'material\' effects on Android', () => {
       ons.platform.select('android');
       const e = ons._util.createElement('<ons-fab> </ons-fab>');
       expect(e.hasAttribute('ripple')).to.be.true;

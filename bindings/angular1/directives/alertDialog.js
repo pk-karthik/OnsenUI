@@ -112,11 +112,9 @@
       transclude: false,
 
       compile: function(element, attrs) {
-        CustomElements.upgrade(element[0]);
 
         return {
           pre: function(scope, element, attrs) {
-            CustomElements.upgrade(element[0]);
             var alertDialog = new AlertDialogView(scope, element, attrs);
 
             $onsen.declareVarAttribute(attrs, alertDialog);
@@ -124,6 +122,7 @@
             $onsen.addModifierMethodsForCustomElements(alertDialog, element);
 
             element.data('ons-alert-dialog', alertDialog);
+            element.data('_scope', scope);
 
             scope.$on('$destroy', function() {
               alertDialog._events = undefined;

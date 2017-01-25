@@ -1,6 +1,6 @@
 /**
  * @element ons-split-view
- * @category split-view
+ * @category control
  * @description
  *  [en]Divides the screen into a left and right section.[/en]
  *  [ja]画面を左右に分割するコンポーネントです。[/ja]
@@ -360,8 +360,8 @@
         }
 
         return function(scope, element, attrs) {
-          element.append(angular.element('<div></div>').addClass('onsen-split-view__secondary full-screen ons-split-view-inner'));
-          element.append(angular.element('<div></div>').addClass('onsen-split-view__main full-screen ons-split-view-inner'));
+          element.append(angular.element('<div></div>').addClass('onsen-split-view__secondary full-screen'));
+          element.append(angular.element('<div></div>').addClass('onsen-split-view__main full-screen'));
 
           var splitView = new SplitView(scope, element, attrs);
 

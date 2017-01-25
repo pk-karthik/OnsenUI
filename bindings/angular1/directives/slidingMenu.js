@@ -1,6 +1,6 @@
 /**
  * @element ons-sliding-menu
- * @category sliding-menu
+ * @category menu
  * @description
  *   [en]Component for sliding UI where one page is overlayed over another page. The above page can be slided aside to reveal the page behind.[/en]
  *   [ja]スライディングメニューを表現するためのコンポーネントで、片方のページが別のページの上にオーバーレイで表示されます。above-pageで指定されたページは、横からスライドして表示します。[/ja]
@@ -420,8 +420,8 @@
         }
 
         return function(scope, element, attrs) {
-          element.append(angular.element('<div></div>').addClass('onsen-sliding-menu__menu ons-sliding-menu-inner'));
-          element.append(angular.element('<div></div>').addClass('onsen-sliding-menu__main ons-sliding-menu-inner'));
+          element.append(angular.element('<div></div>').addClass('onsen-sliding-menu__menu'));
+          element.append(angular.element('<div></div>').addClass('onsen-sliding-menu__main'));
 
           var slidingMenu = new SlidingMenuView(scope, element, attrs);
 

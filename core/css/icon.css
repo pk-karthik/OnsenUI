@@ -17,13 +17,14 @@ limitations under the License.
 
 .ons-icon {
   display: inline-block;
+  line-height: inherit;
   font-style: normal;
   font-weight: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-.ons-icon--ion {
+:not(ons-toolbar-button) > .ons-icon--ion {
   line-height: 0.75em;
   vertical-align: -25%;
 }

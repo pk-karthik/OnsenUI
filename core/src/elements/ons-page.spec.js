@@ -13,11 +13,37 @@ describe('OnsPageElement', () => {
   });
 
   it('should exist', () => {
-    expect(window.OnsPageElement).to.be.ok;
+    expect(window.ons.PageElement).to.be.ok;
   });
 
-  it('has page class', () => {
+  onlyChrome(it)('has page class', () => {
     expect(element.classList.contains('page')).to.be.true;
+    element.setAttribute('class', 'foo');
+    expect(element.classList.contains('page')).to.be.true;
+    expect(element.classList.contains('foo')).to.be.true;
+  });
+
+  onlyChrome(it)('should fill class name automatically on content wrapper element', () => {
+    const page = ons._util.createElement(`<ons-page>
+      <div class="content">...</div>
+    </ons-page>`);
+
+    expect(page.querySelector('.page__content').textContent).to.be.equal('...');
+  });
+
+  onlyChrome(it)('should fill class name automatically on background element', () => {
+    const page = ons._util.createElement(`<ons-page>
+      <div class="background" id="test">...</div>
+    </ons-page>`);
+
+    expect(page.querySelector('.page__background').id).to.be.equal('test');
+  });
+
+  onlyChrome(it)('should create background element automatically', () => {
+    const page = ons._util.createElement(`<ons-page>
+      <div class="page__content">...</div>
+    </ons-page>`);
+    expect(page.querySelector('.page__background')).to.be.ok;
   });
 
   describe('#attachedCallback()', () => {
@@ -30,7 +56,7 @@ describe('OnsPageElement', () => {
       return expect(initPromise).to.eventually.be.fulfilled;
     });
 
-    it('consumes _skipinit attribute if present', () => {
+    onlyChrome(it)('consumes _skipinit attribute if present', () => {
       element.setAttribute('_skipinit', '');
       expect(element.hasAttribute('_skipinit')).to.be.true;
       document.body.appendChild(element);
@@ -39,7 +65,7 @@ describe('OnsPageElement', () => {
   });
 
   describe('#_tryToFillStatusBar()', (done) => {
-    it('fills status bar', () => {
+    onlyChrome(it)('fills status bar', () => {
       var tmp = ons._internal.autoStatusBarFill;
       ons._internal.autoStatusBarFill = action => action();
       element._tryToFillStatusBar();
@@ -49,7 +75,7 @@ describe('OnsPageElement', () => {
   });
 
   describe('#detachedCallback', () => {
-    it('fires \'destroy\' event', () => {
+    onlyChrome(it)('fires \'destroy\' event', () => {
       var spy = chai.spy();
       document.addEventListener('destroy', spy);
       document.body.appendChild(element);
@@ -77,7 +103,7 @@ describe('OnsPageElement', () => {
       expect(spy).to.have.been.called.once;
     });
 
-    it('is correctly deleted', () => {
+    onlyChrome(it)('is correctly deleted', () => {
       element.onDeviceBackButton = () => { return; };
       expect(element._backButtonHandler).to.be.ok;
 
@@ -87,75 +113,34 @@ describe('OnsPageElement', () => {
   });
 
   describe('#_getBackgroundElement()', () => {
-    it('gets page__background', () => {
+    onlyChrome(it)('gets page__background', () => {
       expect(() => element._getBackgroundElement()).not.to.throw(Error);
     });
 
-    it('throws page__background error', () => {
+    onlyChrome(it)('throws page__background error', () => {
       element.removeChild(element.getElementsByClassName('page__background')[0]);
       expect(() => element._getBackgroundElement()).to.throw(Error);
     });
   });
 
   describe('#_getContentElement()', () => {
-    it('throws page__content error', () => {
+    onlyChrome(it)('throws page__content error', () => {
       element.removeChild(element.getElementsByClassName('page__content')[0]);
       expect(() => element._getContentElement()).to.throw(Error);
     });
   });
 
   describe('#_canAnimateToolbar()', () => {
-    it('works with normal toolbar', () => {
+    onlyChrome(it)('works with normal toolbar', () => {
       expect(element._canAnimateToolbar()).to.be.false;
-      element._registerToolbar(new OnsToolbarElement());
+      element.insertBefore(new ons.ToolbarElement(), element.children[0]);
       expect(element._canAnimateToolbar()).to.be.true;
     });
 
-    it('works with toolbar in page__content', () => {
+    onlyChrome(it)('works with toolbar in page__content', () => {
       expect(element._canAnimateToolbar()).to.be.false;
-      element.lastChild.appendChild(new OnsToolbarElement());
+      element.lastChild.appendChild(new ons.ToolbarElement());
       expect(element._canAnimateToolbar()).to.be.true;
-    });
-  });
-
-  describe('#_getToolbarElement()', () => {
-    it('returns the toolbar element', () => {
-      element._registerToolbar(new OnsToolbarElement());
-      expect(element._getToolbarElement()).to.be.ok;
-    });
-  });
-
-  describe('#_registerToolbar()', () => {
-    it('inserts toolbar as a child', () => {
-      var spy = chai.spy.on(element, 'insertBefore');
-      var toolbarElement = new OnsToolbarElement();
-      element._registerToolbar(toolbarElement);
-      expect(spy).to.have.been.called.with(toolbarElement, element.children[0]);
-    });
-
-    it('inserts toolbar as a child after status-bar-fill', () => {
-      var fill = document.createElement('div');
-      fill.classList.add('page__status-bar-fill');
-      element.insertBefore(fill, element.firstChild);
-      var toolbarElement = new OnsToolbarElement();
-      var spy = chai.spy.on(element, 'insertBefore');
-      element._registerToolbar(toolbarElement);
-      expect(spy).to.have.been.called.with(toolbarElement, element.children[1]);
-    });
-  });
-
-  describe('#_getBottomToolbarElement()', () => {
-    it('inserts bottomToolbar as a child', () => {
-      element._registerBottomToolbar(new OnsBottomToolbarElement());
-      expect(element._getBottomToolbarElement()).to.be.ok;
-    });
-  });
-
-  describe('#registerExtraElement()', () => {
-    it('attaches a new child to the page', () => {
-      expect(element.lastChild.className).to.equal('page__content');
-      element._registerExtraElement(document.createElement('div'));
-      expect(element.lastChild.className).to.equal('page__extra');
     });
   });
 
@@ -166,7 +151,7 @@ describe('OnsPageElement', () => {
       expect(spy).to.have.been.called.once;
     });
 
-    it('sets _onInfiniteScroll', () => {
+    onlyChrome(it)('sets _onInfiniteScroll', () => {
       let i = 0;
       window._testApp = {
         a: () => i += 42
@@ -180,7 +165,7 @@ describe('OnsPageElement', () => {
       expect(i).to.equal(84);
     });
 
-    it('infiniteScroll doesn\'t throw error until it\'s called', () => {
+    onlyChrome(it)('infiniteScroll doesn\'t throw error until it\'s called', () => {
       const app = {a: () => 42};
       element.attributeChangedCallback('on-infinite-scroll', '', '_testApp.a');
       window._testApp = app;
@@ -202,7 +187,7 @@ describe('OnsPageElement', () => {
   });
 
   describe('#_hide()', () => {
-    it('fires \'hide\' event', () => {
+    onlyChrome(it)('fires \'hide\' event', () => {
       var spy = chai.spy();
       document.addEventListener('hide', spy);
       document.body.appendChild(element);
@@ -220,10 +205,43 @@ describe('OnsPageElement', () => {
       div2.innerHTML = div1.innerHTML;
       expect(div1.isEqualNode(div2)).to.be.true;
     });
+
+    onlyChrome(it)('adds elements in correct order', () => {
+      const div = document.createElement('div');
+      div.innerHTML = '<ons-page><span>test</span><ons-toolbar></ons-toolbar></ons-page>';
+      const elements = div.children[0].children;
+      expect(elements[0].tagName.toLowerCase()).to.equal('ons-toolbar');
+      expect(elements[1].className).to.equal('page__background');
+      expect(elements[2].className).to.equal('page__content');
+    });
+  });
+
+  describe('#_elementShouldBeMoved()', () => {
+
+    it('ignores .page__background', () => {
+      const el = selector => ons._util.create(selector);
+      expect(element._elementShouldBeMoved(el('.page__background'))).to.be.false;
+      expect(element._elementShouldBeMoved(el('.page__doge'))).to.be.true;
+      expect(element._elementShouldBeMoved(el('.doge__doge'))).to.be.true;
+    });
+
+    it('handles fabs accordingly', () => {
+      const toolbar = document.createElement('ons-fab');
+      expect(element._elementShouldBeMoved(toolbar)).to.be.true;
+      toolbar.setAttribute('position', 'top right');
+      expect(element._elementShouldBeMoved(toolbar)).to.be.false;
+    });
+
+    it('moves inline elements', () => {
+      const toolbar = document.createElement('ons-toolbar');
+      expect(element._elementShouldBeMoved(toolbar)).to.be.false;
+      toolbar.setAttribute('inline', '');
+      expect(element._elementShouldBeMoved(toolbar)).to.be.true;
+    });
   });
 
   describe('autoStyling', () => {
-    it('adds \'material\' modifier on Android', () => {
+    onlyChrome(it)('adds \'material\' modifier on Android', () => {
       ons.platform.select('android');
       const e = ons._util.createElement('<ons-page>content</ons-page>');
       expect(e.getAttribute('modifier')).to.equal('material');
@@ -231,7 +249,7 @@ describe('OnsPageElement', () => {
     });
   });
 
-  describe('infiniteScroll', () => {
+  onlyChrome(describe)('infiniteScroll', () => {
     var content, page, i, maxScroll;
     beforeEach(() => {
       i = 0;
@@ -258,7 +276,7 @@ describe('OnsPageElement', () => {
         i++;
         done();
       };
-      content.scrollTop = 0.95 * maxScroll;
+      setImmediate(() => content.scrollTop = 0.95 * maxScroll);
       setTimeout(() => {
         expect(i).to.equal(1);
         done();
@@ -270,7 +288,7 @@ describe('OnsPageElement', () => {
         i++;
         setTimeout(done, 200);
       };
-      content.scrollTop = 0.95 * maxScroll;
+      setImmediate(() => content.scrollTop = 0.95 * maxScroll);
       setTimeout(element._boundOnScroll, 50);
       setTimeout(element._boundOnScroll, 150);
       setTimeout(element._boundOnScroll, 250);

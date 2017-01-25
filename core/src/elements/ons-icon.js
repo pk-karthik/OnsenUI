@@ -15,13 +15,13 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import BaseElement from '../ons/base-element';
 
 /**
  * @element ons-icon
- * @category icon
+ * @category visual
  * @description
  *   [en]
  *     Displays an icon. The following icon suites are available:
@@ -33,7 +33,7 @@ import BaseElement from 'ons/base-element';
  *   [ja][/ja]
  * @codepen xAhvg
  * @tutorial vanilla/Reference/icon
- * @guide UsingIcons [en]Using icons[/en][ja]アイコンを使う[/ja]
+ * @guide cross-platform-styling [en]Information about cross platform styling[/en][ja]Information about cross platform styling[/ja]
  * @example
  * <ons-icon
  *   icon="md-car"
@@ -46,7 +46,7 @@ import BaseElement from 'ons/base-element';
  *   Car
  * </ons-button>
  */
-class IconElement extends BaseElement {
+export default class IconElement extends BaseElement {
 
   /**
    * @attribute icon
@@ -122,10 +122,12 @@ class IconElement extends BaseElement {
    *   [ja]アイコンを回転するかどうかを指定します。[/ja]
    */
 
-  createdCallback() {
-    if (!this.hasAttribute('_compiled')) {
-      this._compile();
-    }
+  init() {
+    this._compile();
+  }
+
+  static get observedAttributes() {
+    return ['icon', 'size', 'modifier'];
   }
 
   attributeChangedCallback(name, last, current) {
@@ -137,7 +139,6 @@ class IconElement extends BaseElement {
   _compile() {
     autoStyle.prepare(this);
     this._update();
-    this.setAttribute('_compiled', '');
   }
 
   _update() {
@@ -202,6 +203,4 @@ class IconElement extends BaseElement {
   }
 }
 
-window.OnsIconElement = document.registerElement('ons-icon', {
-  prototype: IconElement.prototype
-});
+customElements.define('ons-icon', IconElement);

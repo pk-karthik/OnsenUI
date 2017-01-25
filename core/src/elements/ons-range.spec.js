@@ -4,7 +4,7 @@ describe('OnsRangeElement', () => {
   let element;
 
   beforeEach(done => {
-    element = new OnsRangeElement();
+    element = new ons.RangeElement();
     document.body.appendChild(element);
     ons._contentReady(element, done);
   });
@@ -15,14 +15,14 @@ describe('OnsRangeElement', () => {
   });
 
   it('exists', () => {
-    expect(window.OnsSwitchElement).to.be.ok;
+    expect(window.ons.SwitchElement).to.be.ok;
   });
 
   it('classList contains \'range\' by default', () => {
     expect(element._input.classList.contains('range')).to.be.true;
   });
 
-  it('provides \'modifier\' attribute', () => {
+  onlyChrome(it)('provides \'modifier\' attribute', () => {
     const input = element.querySelector('input');
 
     element.setAttribute('modifier', 'hoge');

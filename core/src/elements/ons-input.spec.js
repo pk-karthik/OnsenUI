@@ -18,10 +18,32 @@ describe('OnsInputElement', () => {
   });
 
   it('should exist', () => {
-    expect(window.OnsInputElement).to.be.ok;
+    expect(window.ons.InputElement).to.be.ok;
   });
 
-  it('provides \'modifier\' attribute', () => {
+  onlyChrome(describe)('"class" attribute', () => {
+    it('should contain default class token automatically on radio input', () => {
+      const element = ons._util.createElement(`
+        <ons-input type="radio"> </ons-input>
+      `);
+      expect(element.classList.contains('radio-button')).to.be.true;
+      element.setAttribute('class', 'foo');
+      expect(element.classList.contains('radio-button')).to.be.true;
+      expect(element.classList.contains('foo')).to.be.true;
+    });
+
+    it('should contain default class token automatically on checkbox input', () => {
+      const element = ons._util.createElement(`
+        <ons-input type="checkbox"> </ons-input>
+      `);
+      expect(element.classList.contains('checkbox')).to.be.true;
+      element.setAttribute('class', 'foo');
+      expect(element.classList.contains('checkbox')).to.be.true;
+      expect(element.classList.contains('foo')).to.be.true;
+    });
+  });
+
+  onlyChrome(it)('provides \'modifier\' attribute', () => {
     element.setAttribute('modifier', 'hoge');
     expect(element._input.classList.contains('text-input--hoge')).to.be.true;
     expect(element._helper.classList.contains('text-input--hoge__label')).to.be.true;
@@ -36,27 +58,27 @@ describe('OnsInputElement', () => {
   });
 
   describe('#_updateLabel()', () => {
-    it('is called when the placeholder attribute changes', () => {
+    onlyChrome(it)('is called when the placeholder attribute changes', () => {
       const spy = chai.spy.on(element, '_updateLabel');
 
       element.setAttribute('placeholder', 'Password');
       expect(spy).to.have.been.called.once;
     });
 
-    it('removes the label text if there is no placeholder attribute', () => {
+    onlyChrome(it)('removes the label text if there is no placeholder attribute', () => {
       element.removeAttribute('placeholder');
       expect(element._helper.innerText).to.equal('');
     });
   });
 
   describe('#_updateBoundAttributes()', () => {
-    it('is called when one of the bound attribute changes', () => {
+    onlyChrome(it)('is called when one of the bound attribute changes', () => {
       const spy = chai.spy.on(element, '_updateBoundAttributes');
       element.setAttribute('value', 'abc');
       expect(spy).to.have.been.called.once;
     });
 
-    it('removes attributes from the input element', () => {
+    onlyChrome(it)('removes attributes from the input element', () => {
       element.setAttribute('value', 'abc');
       expect(element._input.getAttribute('value')).to.equal('abc');
       element.removeAttribute('value');
@@ -64,22 +86,7 @@ describe('OnsInputElement', () => {
     });
   });
 
-  describe('#_updateLabelColor()', () => {
-    it('sets the text color', () => {
-      element.value = 'abc';
-      element._input.focus();
-      element._updateLabelColor();
-      expect(element._helper.style.color).to.equal('');
-    });
-  });
-
   describe('#_onInput()', () => {
-    it('calls the #_updateLabelColor()', () => {
-      const spy = chai.spy.on(element, '_updateLabelColor');
-      element._onInput();
-      expect(spy).to.have.been.called.once;
-    });
-
     it('is called when the value changes', () => {
       const spy = chai.spy.on(element, '_onInput');
       element.value = 'abc';
@@ -89,17 +96,9 @@ describe('OnsInputElement', () => {
   });
 
   describe('#_onFocusin()', () => {
-    it('calls #_updateLabelColor()', () => {
-      const spy = chai.spy.on(element, '_updateLabelColor');
+    it('calls #_updateLabelClass()', () => {
+      const spy = chai.spy.on(element, '_updateLabelClass');
       element._onFocusin();
-      expect(spy).to.have.been.called.once;
-    });
-  });
-
-  describe('#_onFocusout()', () => {
-    it('calls #_updateLabelColor()', () => {
-      const spy = chai.spy.on(element, '_updateLabelColor');
-      element._onFocusout();
       expect(spy).to.have.been.called.once;
     });
   });
@@ -136,7 +135,7 @@ describe('OnsInputElement', () => {
       });
     });
 
-    it('provides \'content-left\' attribute', () => {
+    onlyChrome(it)('provides \'content-left\' attribute', () => {
       let element = ons._util.createElement('<ons-input>content</ons-input>');
       expect(element.firstChild.lastChild.className).to.equal('input-label');
       element = ons._util.createElement('<ons-input content-left>content</ons-input>');
@@ -145,7 +144,7 @@ describe('OnsInputElement', () => {
   });
 
   describe('#type attribute', () => {
-    it('creates checkbox', (done) => {
+    onlyChrome(it)('creates checkbox', (done) => {
       const element = ons._util.createElement('<ons-input type="checkbox"></ons-input>');
 
       setImmediate(() => {

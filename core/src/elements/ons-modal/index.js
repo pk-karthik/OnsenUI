@@ -15,21 +15,23 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import ModifierUtil from 'ons/internal/modifier-util';
-import AnimatorFactory from 'ons/internal/animator-factory';
+import util from '../../ons/util';
+import ModifierUtil from '../../ons/internal/modifier-util';
+import AnimatorFactory from '../../ons/internal/animator-factory';
 import ModalAnimator from './animator';
 import FadeModalAnimator from './fade-animator';
-import platform from 'ons/platform';
-import BaseElement from 'ons/base-element';
-import deviceBackButtonDispatcher from 'ons/device-back-button-dispatcher';
-import DoorLock from 'ons/doorlock';
-import contentReady from 'ons/content-ready';
+import platform from '../../ons/platform';
+import BaseElement from '../../ons/base-element';
+import deviceBackButtonDispatcher from '../../ons/device-back-button-dispatcher';
+import DoorLock from '../../ons/doorlock';
+import contentReady from '../../ons/content-ready';
 
 const scheme = {
   '': 'modal--*',
   'modal__content': 'modal--*__content'
 };
+
+const defaultClassName = 'modal';
 
 const _animatorDict = {
   'default': ModalAnimator,
@@ -39,7 +41,7 @@ const _animatorDict = {
 
 /**
  * @element ons-modal
- * @category modal
+ * @category dialog
  * @description
  *   [en]
  *     Modal component that masks current screen. Underlying components are not subject to any events while the modal component is shown.
@@ -50,12 +52,9 @@ const _animatorDict = {
  *     画面全体をマスクするモーダル用コンポーネントです。下側にあるコンポーネントは、
  *     モーダルが表示されている間はイベント通知が行われません。
  *   [/ja]
- * @guide UsingModal
- *   [en]Using ons-modal component[/en]
- *   [ja]モーダルの使い方[/ja]
- * @guide CallingComponentAPIsfromJavaScript
- *   [en]Using navigator from JavaScript[/en]
- *   [ja]JavaScriptからコンポーネントを呼び出す[/ja]
+ * @guide dialogs
+ *   [en]Dialog components[/en]
+ *   [ja]Dialog components[/ja]
  * @seealso ons-dialog
  *   [en]The `<ons-dialog>` component can be used to create a modal dialog.[/en]
  *   [ja][/ja]
@@ -69,7 +68,7 @@ const _animatorDict = {
  *   modal.show();
  * </script>
  */
-class ModalElement extends BaseElement {
+export default class ModalElement extends BaseElement {
 
   /**
    * @attribute animation
@@ -88,7 +87,7 @@ class ModalElement extends BaseElement {
    *  [ja]アニメーション時のduration, timing, delayをオブジェクトリテラルで指定します。e.g. <code>{duration: 0.2, delay: 1, timing: 'ease-in'}</code>[/ja]
    */
 
-  createdCallback() {
+  init() {
     contentReady(this, () => {
       this._compile();
     });
@@ -102,7 +101,6 @@ class ModalElement extends BaseElement {
       defaultAnimation: this.getAttribute('animation')
     });
   }
-
 
   /**
    * @property onDeviceBackButton
@@ -125,7 +123,8 @@ class ModalElement extends BaseElement {
 
   _compile() {
     this.style.display = 'none';
-    this.classList.add('modal');
+    this.style.zIndex = 10001;
+    this.classList.add(defaultClassName);
 
     if (!util.findChild(this, '.modal__content')) {
       const content = document.createElement('div');
@@ -143,37 +142,14 @@ class ModalElement extends BaseElement {
     ModifierUtil.initModifier(this, scheme);
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
     if (this._backButtonHandler) {
       this._backButtonHandler.destroy();
     }
   }
 
-  attachedCallback() {
-    setImmediate(this._ensureNodePosition.bind(this));
+  connectedCallback() {
     this.onDeviceBackButton = () => undefined;
-  }
-
-  _ensureNodePosition() {
-    if (!this.parentNode || this.hasAttribute('inline')) {
-      return;
-    }
-
-    if (this.parentNode.nodeName.toLowerCase() !== 'ons-page') {
-      var page = this;
-      for (;;) {
-        page = page.parentNode;
-
-        if (!page) {
-          return;
-        }
-
-        if (page.nodeName.toLowerCase() === 'ons-page') {
-          break;
-        }
-      }
-      page._registerExtraElement(this);
-    }
   }
 
   /**
@@ -219,13 +195,16 @@ class ModalElement extends BaseElement {
       const unlock = this._doorLock.lock();
       const animator = this._animatorFactory.newAnimator(options);
 
-      this.style.display = 'table';
       return new Promise(resolve => {
-        animator.show(this, () => {
-          unlock();
+        contentReady(this, () => {
+          this.style.display = 'table';
+          animator.show(this, () => {
+            unlock();
 
-          callback();
-          resolve(this);
+            util.propagateAction(this, '_show');
+            callback();
+            resolve(this);
+          });
         });
       });
     };
@@ -291,12 +270,15 @@ class ModalElement extends BaseElement {
       const animator = this._animatorFactory.newAnimator(options);
 
       return new Promise(resolve => {
-        animator.hide(this, () => {
-          this.style.display = 'none';
-          unlock();
+        contentReady(this, () => {
+          animator.hide(this, () => {
+            this.style.display = 'none';
+            unlock();
 
-          callback();
-          resolve(this);
+            util.propagateAction(this, '_hide');
+            callback();
+            resolve(this);
+          });
         });
       });
     };
@@ -306,27 +288,38 @@ class ModalElement extends BaseElement {
     });
   }
 
+  static get observedAttributes() {
+    return ['modifier', 'class'];
+  }
+
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
+    if (name === 'class') {
+      if (!this.classList.contains(defaultClassName)) {
+        this.className = defaultClassName + ' ' + current;
+      }
+    } else if (name === 'modifier') {
       return ModifierUtil.onModifierChanged(last, current, this, scheme);
     }
   }
+
+  /**
+   * @param {String} name
+   * @param {Function} Animator
+   */
+  static registerAnimator(name, Animator) {
+    if (!(Animator.prototype instanceof ModalAnimator)) {
+      throw new Error('"Animator" param must inherit OnsModalElement.ModalAnimator');
+    }
+    _animatorDict[name] = Animator;
+  }
+
+  static get animators() {
+    return _animatorDict;
+  }
+
+  static get ModalAnimator() {
+    return ModalAnimator;
+  }
 }
 
-window.OnsModalElement = document.registerElement('ons-modal', {
-  prototype: ModalElement.prototype
-});
-
-/**
- * @param {String} name
- * @param {Function} Animator
- */
-window.OnsModalElement.registerAnimator = function(name, Animator) {
-  if (!(Animator.prototype instanceof ModalAnimator)) {
-    throw new Error('"Animator" param must inherit OnsModalElement.ModalAnimator');
-  }
-  _animatorDict[name] = Animator;
-};
-
-window.OnsModalElement.ModalAnimator = ModalAnimator;
-
+customElements.define('ons-modal', ModalElement);

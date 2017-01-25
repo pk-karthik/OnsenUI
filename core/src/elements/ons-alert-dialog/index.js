@@ -15,16 +15,16 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import AnimatorFactory from 'ons/internal/animator-factory';
+import util from '../../ons/util';
+import autoStyle from '../../ons/autostyle';
+import ModifierUtil from '../../ons/internal/modifier-util';
+import AnimatorFactory from '../../ons/internal/animator-factory';
 import {AlertDialogAnimator, IOSAlertDialogAnimator, AndroidAlertDialogAnimator} from './animator';
-import platform from 'ons/platform';
-import BaseElement from 'ons/base-element';
-import deviceBackButtonDispatcher from 'ons/device-back-button-dispatcher';
-import DoorLock from 'ons/doorlock';
-import contentReady from 'ons/content-ready';
+import platform from '../../ons/platform';
+import BaseElement from '../../ons/base-element';
+import deviceBackButtonDispatcher from '../../ons/device-back-button-dispatcher';
+import DoorLock from '../../ons/doorlock';
+import contentReady from '../../ons/content-ready';
 
 const scheme = {
   '.alert-dialog': 'alert-dialog--*',
@@ -36,7 +36,8 @@ const scheme = {
   '.alert-dialog-footer--one': 'alert-dialog-footer--one--*',
   '.alert-dialog-button--one': 'alert-dialog-button--one--*',
   '.alert-dialog-button--primal': 'alert-dialog-button--primal--*',
-  '.alert-dialog-mask': 'alert-dialog-mask--*'
+  '.alert-dialog-mask': 'alert-dialog-mask--*',
+  '.text-input': 'text-input--*'
 };
 
 const _animatorDict = {
@@ -60,9 +61,9 @@ const _animatorDict = {
  * @modifier material
  *   [en]Material Design style[/en]
  *   [ja][/ja]
- * @guide UsingAlert
- *   [en]Learn how to use the alert dialog.[/en]
- *   [ja]アラートダイアログの使い方の解説。[/ja]
+ * @guide dialogs
+ *   [en]Dialog components[/en]
+ *   [ja]Dialog components[/ja]
  * @seealso ons-dialog
  *   [en]ons-dialog component[/en]
  *   [ja]ons-dialogコンポーネント[/ja]
@@ -86,7 +87,7 @@ const _animatorDict = {
  *   document.getElementById('alert-dialog').show();
  * </script>
  */
-class AlertDialogElement extends BaseElement {
+export default class AlertDialogElement extends BaseElement {
 
   /**
    * @event preshow
@@ -186,6 +187,16 @@ class AlertDialogElement extends BaseElement {
    *  [ja]背景のマスクの色を指定します。"rgba(0, 0, 0, 0.2)"がデフォルト値です。[/ja]
    */
 
+  init() {
+    contentReady(this, () => this._compile());
+
+    this._visible = false;
+    this._doorLock = new DoorLock();
+    this._boundCancel = this._cancel.bind(this);
+
+    this._updateAnimatorFactory()
+  }
+
   /**
    * @return {Element}
    */
@@ -213,16 +224,6 @@ class AlertDialogElement extends BaseElement {
    */
   get _contentElement() {
     return util.findChild(this._dialog.children[0], '.alert-dialog-content');
-  }
-
-  createdCallback() {
-    contentReady(this, () => this._compile());
-
-    this._visible = false;
-    this._doorLock = new DoorLock();
-    this._boundCancel = this._cancel.bind(this);
-
-    this._updateAnimatorFactory();
   }
 
   _updateAnimatorFactory() {
@@ -488,16 +489,18 @@ class AlertDialogElement extends BaseElement {
   _cancel() {
     if (this.cancelable && !this._running) {
       this._running = true;
-      this.hide({
-        callback: () => {
-          this._running = false;
-          util.triggerElementEvent(this, 'cancel');
-        }
-      });
+      this.hide()
+        .then(
+          () => {
+            this._running = false;
+            util.triggerElementEvent(this, 'dialog-cancel');
+          },
+          () => this._running = false
+        );
     }
   }
 
-  attachedCallback() {
+  connectedCallback() {
     this.onDeviceBackButton = e => this.cancelable ? this._cancel() : e.callParentHandler();
 
     contentReady(this, () => {
@@ -505,11 +508,15 @@ class AlertDialogElement extends BaseElement {
     });
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
     this._backButtonHandler.destroy();
     this._backButtonHandler = null;
 
     this._mask.removeEventListener('click', this._boundCancel.bind(this), false);
+  }
+
+  static get observedAttributes() {
+    return ['modifier', 'animation'];
   }
 
   attributeChangedCallback(name, last, current) {
@@ -520,21 +527,25 @@ class AlertDialogElement extends BaseElement {
       this._updateAnimatorFactory();
     }
   }
+
+  /**
+   * @param {String} name
+   * @param {DialogAnimator} Animator
+   */
+  static registerAnimator(name, Animator) {
+    if (!(Animator.prototype instanceof AlertDialogAnimator)) {
+      throw new Error('"Animator" param must inherit OnsAlertDialogElement.AlertDialogAnimator');
+    }
+    _animatorDict[name] = Animator;
+  }
+
+  static get animators() {
+    return _animatorDict;
+  }
+
+  static get AlertDialogAnimator() {
+    return AlertDialogAnimator;
+  }
 }
 
-const OnsAlertDialogElement = window.OnsAlertDialogElement = document.registerElement('ons-alert-dialog', {
-  prototype: AlertDialogElement.prototype
-});
-
-/**
- * @param {String} name
- * @param {DialogAnimator} Animator
- */
-OnsAlertDialogElement.registerAnimator = function(name, Animator) {
-  if (!(Animator.prototype instanceof AlertDialogAnimator)) {
-    throw new Error('"Animator" param must inherit OnsAlertDialogElement.AlertDialogAnimator');
-  }
-  _animatorDict[name] = Animator;
-};
-
-OnsAlertDialogElement.AlertDialogAnimator = AlertDialogAnimator;
+customElements.define('ons-alert-dialog', AlertDialogElement);

@@ -11,11 +11,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
-import contentReady from 'ons/content-ready';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+import contentReady from '../ons/content-ready';
+
+const defaultCheckboxClass = 'checkbox';
+const defaultRadioButtonClass = 'radio-button';
 
 const scheme = {
   '.text-input': 'text-input--*',
@@ -52,12 +55,15 @@ const INPUT_ATTRIBUTES = [
 
 /**
  * @element ons-input
- * @category input
+ * @category form
  * @modifier material
  *  [en]Displays a Material Design input.[/en]
  *  [ja][/ja]
  * @modifier underbar
  *  [en]Displays a horizontal line underneath a text input.[/en]
+ *  [ja][/ja]
+ * @modifier transparent
+ *  [en]Displays a transparent input. Works for Material Design.[/en]
  *  [ja][/ja]
  * @description
  *  [en]
@@ -76,17 +82,15 @@ const INPUT_ATTRIBUTES = [
  * @seealso ons-switch
  *   [en]The `<ons-switch>` element is used to display a draggable toggle switch.[/en]
  *   [ja][/ja]
- * @guide UsingFormComponents
+ * @guide adding-page-content
  *   [en]Using form components[/en]
  *   [ja]フォームを使う[/ja]
- * @guide EventHandling
- *   [en]Event handling descriptions[/en]
- *   [ja]イベント処理の使い方[/ja]
+ * @guide using-modifier [en]More details about the `modifier` attribute[/en][ja]modifier属性の使い方[/ja]
  * @example
  * <ons-input placeholder="Username" float></ons-input>
  * <ons-input type="checkbox" checked></ons-input>
  */
-class InputElement extends BaseElement {
+export default class InputElement extends BaseElement {
 
   /**
    * @attribute placeholder
@@ -130,7 +134,7 @@ class InputElement extends BaseElement {
    *  [ja][/ja]
    */
 
-  createdCallback() {
+  init() {
     contentReady(this, () => {
       this._compile();
       this.attributeChangedCallback('checked', null, this.getAttribute('checked'));
@@ -138,7 +142,6 @@ class InputElement extends BaseElement {
 
     this._boundOnInput = this._onInput.bind(this);
     this._boundOnFocusin = this._onFocusin.bind(this);
-    this._boundOnFocusout = this._onFocusout.bind(this);
     this._boundDelegateEvent = this._delegateEvent.bind(this);
   }
 
@@ -166,14 +169,14 @@ class InputElement extends BaseElement {
 
     switch (this.getAttribute('type')) {
       case 'checkbox':
-        this.classList.add('checkbox');
+        this.classList.add(defaultCheckboxClass);
         this._input.classList.add('checkbox__input');
         this._helper.classList.add('checkbox__checkmark');
         this._updateBoundAttributes();
         break;
 
       case 'radio':
-        this.classList.add('radio-button');
+        this.classList.add(defaultRadioButtonClass);
         this._input.classList.add('radio-button__input');
         this._helper.classList.add('radio-button__checkmark');
         this._updateBoundAttributes();
@@ -185,7 +188,6 @@ class InputElement extends BaseElement {
         this._input.parentElement.classList.add('text-input__container');
 
         this._updateLabel();
-        this._updateLabelColor();
         this._updateBoundAttributes();
         this._updateLabelClass();
         break;
@@ -198,22 +200,46 @@ class InputElement extends BaseElement {
     ModifierUtil.initModifier(this, scheme);
   }
 
+  static get observedAttributes() {
+    return ['class', 'modifier', 'placeholder', 'input-id', 'checked', ...INPUT_ATTRIBUTES];
+  }
+
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
-      return contentReady(this, () => ModifierUtil.onModifierChanged(last, current, this, scheme));
-    } else if (name === 'placeholder') {
-      return contentReady(this, () => this._updateLabel());
-    } if (name === 'input-id') {
-      contentReady(this, () => this._input.id = current);
-    } if (name === 'checked') {
-      this.checked = current !== null;
+    switch (name) {
+      case 'modifier':
+        contentReady(this, () => ModifierUtil.onModifierChanged(last, current, this, scheme));
+        break;
+      case 'placeholder':
+        contentReady(this, () => this._updateLabel());
+        break;
+      case 'input-id':
+        contentReady(this, () => this._input.id = current);
+        break;
+      case 'checked':
+        this.checked = current !== null;
+        break;
+      case 'class':
+        switch (this.getAttribute('type')) {
+          case 'checkbox':
+            if (!this.classList.contains(defaultCheckboxClass)) {
+              this.className = defaultCheckboxClass + ' ' + current;
+            }
+            break;
+          case 'radio':
+            if (!this.classList.contains(defaultRadioButtonClass)) {
+              this.className = defaultRadioButtonClass + ' ' + current;
+            }
+            break;
+        }
+        break;
     }
-    else if (INPUT_ATTRIBUTES.indexOf(name) >= 0) {
-      return contentReady(this, () => this._updateBoundAttributes());
+
+    if (INPUT_ATTRIBUTES.indexOf(name) >= 0) {
+      contentReady(this, () => this._updateBoundAttributes());
     }
   }
 
-  attachedCallback() {
+  connectedCallback() {
     contentReady(this, () => {
       if (this._input.type !== 'checkbox' && this._input.type !== 'radio') {
         this._input.addEventListener('input', this._boundOnInput);
@@ -226,11 +252,10 @@ class InputElement extends BaseElement {
     });
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
     contentReady(this, () => {
       this._input.removeEventListener('input', this._boundOnInput);
       this._input.removeEventListener('focusin', this._boundOnFocusin);
-      this._input.removeEventListener('focusout', this._boundOnFocusout);
       this._input.removeEventListener('focus', this._boundDelegateEvent);
       this._input.removeEventListener('blur', this._boundDelegateEvent);
     });
@@ -260,21 +285,12 @@ class InputElement extends BaseElement {
     });
   }
 
-  _updateLabelColor() {
-    if (this.value.length > 0 && this._input === document.activeElement) {
-      this._helper.style.color = '';
-    }
-    else {
-      this._helper.style.color = 'rgba(0, 0, 0, 0.5)';
-    }
-  }
-
   _updateLabelClass() {
     if (this.value === '') {
-      this._helper.classList.remove('text-input__label--active');
+      this._helper.classList.remove('text-input--material__label--active');
     }
-    else {
-      this._helper.classList.add('text-input__label--active');
+    else if (['checkbox', 'radio'].indexOf(this.getAttribute('type')) === -1){
+      this._helper.classList.add('text-input--material__label--active');
     }
   }
 
@@ -289,16 +305,10 @@ class InputElement extends BaseElement {
 
   _onInput(event) {
     this._updateLabelClass();
-    this._updateLabelColor();
   }
 
   _onFocusin(event) {
     this._updateLabelClass();
-    this._updateLabelColor();
-  }
-
-  _onFocusout(event) {
-    this._updateLabelColor();
   }
 
   get _input() {
@@ -323,14 +333,10 @@ class InputElement extends BaseElement {
   }
 
   set value(val) {
-    this.setAttribute('value', val);
-
     contentReady(this, () => {
       this._input.value = val;
       this._onInput();
     });
-
-    return val;
   }
 
   /**
@@ -374,6 +380,4 @@ class InputElement extends BaseElement {
   }
 }
 
-window.OnsInputElement = document.registerElement('ons-input', {
-  prototype: InputElement.prototype
-});
+customElements.define('ons-input', InputElement);

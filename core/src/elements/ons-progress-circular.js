@@ -15,9 +15,10 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+import contentReady from '../ons/content-ready';
 
 const scheme = {
   '.progress-circular': 'progress-circular--*',
@@ -34,7 +35,7 @@ const template = util.createElement(`
 
 /**
  * @element ons-progress-circular
- * @category progress
+ * @category visual
  * @description
  *   [en]
  *     This component displays a circular progress indicator. It can either be used to show how much of a task has been completed or to show a looping animation to indicate that an operation is currently running.
@@ -42,6 +43,9 @@ const template = util.createElement(`
  *   [ja][/ja]
  * @codepen EVzMjR
  * @tutorial vanilla/Reference/progress
+ * @seealso ons-progress-bar
+ *   [en]The `<ons-progress-bar>` component displays a bar progress indicator.[/en]
+ *   [ja][/ja]
  * @example
  * <ons-progress-circular
  *  value="55"
@@ -52,7 +56,7 @@ const template = util.createElement(`
  *  indeterminate>
  * </ons-progress-circular>
  */
-class ProgressCircularElement extends BaseElement {
+export default class ProgressCircularElement extends BaseElement {
 
   /**
    * @attribute modifier
@@ -85,10 +89,12 @@ class ProgressCircularElement extends BaseElement {
    *   [ja]この属性が設定された場合、ループするアニメーションが表示されます。[/ja]
    */
 
-  createdCallback() {
-    if (!this.hasAttribute('_compiled')) {
-      this._compile();
-    }
+  init() {
+    contentReady(this, () => this._compile());
+  }
+
+  static get observedAttributes() {
+    return ['modifier', 'value', 'secondary-value', 'indeterminate'];
   }
 
   attributeChangedCallback(name, last, current) {
@@ -103,23 +109,31 @@ class ProgressCircularElement extends BaseElement {
 
   _updateDeterminate() {
     if (this.hasAttribute('indeterminate')) {
-      this._template.classList.add(`progress-circular--indeterminate`);
-      this._template.classList.remove(`progress-circular--determinate`);
+      contentReady(this, () => {
+        this._template.classList.add(`progress-circular--indeterminate`);
+        this._template.classList.remove(`progress-circular--determinate`);
+      });
     }
     else {
-      this._template.classList.add(`progress-circular--determinate`);
-      this._template.classList.remove(`progress-circular--indeterminate`);
+      contentReady(this, () => {
+        this._template.classList.add(`progress-circular--determinate`);
+        this._template.classList.remove(`progress-circular--indeterminate`);
+      });
     }
   }
 
   _updateValue() {
     if (this.hasAttribute('value')) {
-      const per = Math.ceil(this.getAttribute('value') * 251.32 * 0.01);
-      this._primary.style['stroke-dasharray'] = per + '%, 251.32%';
+      contentReady(this, () => {
+        const per = Math.ceil(this.getAttribute('value') * 251.32 * 0.01);
+        this._primary.style['stroke-dasharray'] = per + '%, 251.32%';
+      });
     }
     if (this.hasAttribute('secondary-value')) {
-      const per =  Math.ceil(this.getAttribute('secondary-value') * 251.32 * 0.01);
-      this._secondary.style['stroke-dasharray'] = per + '%, 251.32%';
+      contentReady(this, () => {
+        const per =  Math.ceil(this.getAttribute('secondary-value') * 251.32 * 0.01);
+        this._secondary.style['stroke-dasharray'] = per + '%, 251.32%';
+      });
     }
   }
 
@@ -182,10 +196,14 @@ class ProgressCircularElement extends BaseElement {
   }
 
   _compile() {
-    this._template = template.cloneNode(true);
+    if (this._isCompiled()) {
+      this._template = util.findChild(this, '.progress-circular');
+    } else {
+      this._template = template.cloneNode(true);
+    }
 
-    this._primary = this._template.childNodes[3];
-    this._secondary = this._template.childNodes[1];
+    this._primary = util.findChild(this._template, '.progress-circular__primary');
+    this._secondary = util.findChild(this._template, '.progress-circular__secondary');
 
     this._updateDeterminate();
     this._updateValue();
@@ -193,11 +211,25 @@ class ProgressCircularElement extends BaseElement {
     this.appendChild(this._template);
 
     ModifierUtil.initModifier(this, scheme);
+  }
 
-    this.setAttribute('_compiled', '');
+  _isCompiled() {
+    if (!util.findChild(this, '.progress-circular')) {
+      return false;
+    }
+
+    const svg = util.findChild(this, '.progress-circular');
+
+    if (!util.findChild(svg, '.progress-circular__secondary')) {
+      return false;
+    }
+
+    if (!util.findChild(svg, '.progress-circular__primary')) {
+      return false;
+    }
+
+    return true;
   }
 }
 
-window.OnsProgressCircularElement = document.registerElement('ons-progress-circular', {
-  prototype: ProgressCircularElement.prototype
-});
+customElements.define('ons-progress-circular', ProgressCircularElement);

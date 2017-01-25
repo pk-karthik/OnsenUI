@@ -130,22 +130,8 @@
 (function() {
   'use strict';
 
-  var lastReady = window.OnsTabbarElement.rewritables.ready;
-  window.OnsTabbarElement.rewritables.ready = ons._waitDiretiveInit('ons-tabbar', lastReady);
-
-  var lastLink = window.OnsTabbarElement.rewritables.link;
-  window.OnsTabbarElement.rewritables.link = function(tabbarElement, target, options, callback) {
-    var view = angular.element(tabbarElement).data('ons-tabbar');
-    view._compileAndLink(target, function(target) {
-      lastLink(tabbarElement, target, options, callback);
-    });
-  };
-
-  var lastUnlink = window.OnsTabbarElement.rewritables.unlink;
-  window.OnsTabbarElement.rewritables.unlink = function(tabbarElement, target, callback) {
-    angular.element(target).data('_scope').$destroy();
-    lastUnlink(tabbarElement, target, callback);
-  };
+  var lastReady = window.ons.TabbarElement.rewritables.ready;
+  window.ons.TabbarElement.rewritables.ready = ons._waitDiretiveInit('ons-tabbar', lastReady);
 
   angular.module('onsen').directive('onsTabbar', function($onsen, $compile, $parse, TabbarView) {
 
@@ -157,7 +143,6 @@
 
       link: function(scope, element, attrs, controller) {
 
-        CustomElements.upgrade(element[0]);
 
         scope.$watch(attrs.hideTabs, function(hide) {
           if (typeof hide === 'string') {

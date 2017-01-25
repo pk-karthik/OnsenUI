@@ -15,11 +15,12 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
 
+const defaultClassName = 'list';
 const scheme = {'': 'list--*'};
 
 /**
@@ -40,9 +41,15 @@ const scheme = {'': 'list--*'};
  * @seealso ons-list-header
  *   [en]ons-list-header component[/en]
  *   [ja]ons-list-headerコンポーネント[/ja]
- * @guide UsingList
+ * @seealso ons-lazy-repeat
+ *   [en]ons-lazy-repeat component[/en]
+ *   [ja]ons-lazy-repeatコンポーネント[/ja]
+ * @guide lists
  *   [en]Using lists[/en]
  *   [ja]リストを使う[/ja]
+ * @guide infinite-scroll
+ *   [en]Loading more items on infinite scroll[/en]
+ *   [ja]Loading more items on infinite scroll[/ja]
  * @codepen yxcCt
  * @tutorial vanilla/Reference/list
  * @example
@@ -52,7 +59,7 @@ const scheme = {'': 'list--*'};
  *   <ons-list-item>Item</ons-list-item>
  * </ons-list>
  */
-class ListElement extends BaseElement {
+export default class ListElement extends BaseElement {
 
   /**
    * @attribute modifier
@@ -62,28 +69,32 @@ class ListElement extends BaseElement {
    *   [ja]リストの表現を指定します。[/ja]
    */
 
-  createdCallback() {
-    if (!this.hasAttribute('_compiled')) {
-      this._compile();
-    }
+  init() {
+    this._compile();
   }
 
   _compile() {
     autoStyle.prepare(this);
-
-    this.classList.add('list');
+    this.classList.add(defaultClassName);
     ModifierUtil.initModifier(this, scheme);
+  }
 
-    this.setAttribute('_compiled', '');
+  static get observedAttributes() {
+    return ['modifier', 'class'];
   }
 
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
-      return ModifierUtil.onModifierChanged(last, current, this, scheme);
+    switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
+      case 'modifier':
+        ModifierUtil.onModifierChanged(last, current, this, scheme);
+        break;
     }
   }
 }
 
-window.OnsListElement = document.registerElement('ons-list', {
-  prototype: ListElement.prototype
-});
+customElements.define('ons-list', ListElement);

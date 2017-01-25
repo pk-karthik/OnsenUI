@@ -11,11 +11,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
-import util from 'ons/util';
-import contentReady from 'ons/content-ready';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+import util from '../ons/util';
+import contentReady from '../ons/content-ready';
 
 const scheme = {
   '.range': 'range--*',
@@ -44,7 +44,7 @@ const INPUT_ATTRIBUTES = [
 
 /**
  * @element ons-range
- * @category range
+ * @category form
  * @modifier material
  *   [en]Material Design slider[/en]
  *   [ja][/ja]
@@ -57,12 +57,7 @@ const INPUT_ATTRIBUTES = [
  *   [ja][/ja]
  * @codepen xZQomM
  * @tutorial vanilla/Reference/range
- * @guide UsingFormComponents
- *   [en]Using form components[/en]
- *   [ja]フォームを使う[/ja]
- * @guide EventHandling
- *   [en]Event handling descriptions[/en]
- *   [ja]イベント処理の使い方[/ja]
+ * @guide using-modifier [en]More details about the `modifier` attribute[/en][ja]modifier属性の使い方[/ja]
  * @seealso ons-input
  *   [en]The `<ons-input>` component is used to display text inputs, radio buttons and checkboxes.[/en]
  *   [ja][/ja]
@@ -70,14 +65,11 @@ const INPUT_ATTRIBUTES = [
  * <ons-range value="20"></ons-range>
  * <ons-range modifier="material" value="10"></range>
  */
-class RangeElement extends BaseElement {
+export default class RangeElement extends BaseElement {
 
-  createdCallback() {
+  init() {
     contentReady(this, () => {
-      if (!this.hasAttribute('_compiled')) {
-        this._compile();
-      }
-
+      this._compile();
       this._updateBoundAttributes();
       this._onChange();
     });
@@ -94,12 +86,15 @@ class RangeElement extends BaseElement {
     }
 
     ModifierUtil.initModifier(this, scheme);
-
-    this.setAttribute('_compiled', '');
   }
 
   _onChange() {
     this._left.style.width = (100 * this._ratio) + '%';
+  }
+
+  _onDragstart(e) {
+    e.stopPropagation();
+    e.gesture.stopPropagation();
   }
 
   get _ratio() {
@@ -108,6 +103,10 @@ class RangeElement extends BaseElement {
     const max = this._input.max === '' ? 100 : parseInt(this._input.max);
 
     return (this.value - min) / (max - min);
+  }
+
+  static get observedAttributes() {
+    return ['modifier', ...INPUT_ATTRIBUTES];
   }
 
   attributeChangedCallback(name, last, current) {
@@ -123,13 +122,15 @@ class RangeElement extends BaseElement {
         }
       });
     }
- }
+  }
 
-  attachedCallback() {
+  connectedCallback() {
+    this.addEventListener('dragstart', this._onDragstart);
     this.addEventListener('input', this._onChange);
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
+    this.removeEventListener('dragstart', this._onDragstart);
     this.removeEventListener('input', this._onChange);
   }
 
@@ -175,7 +176,9 @@ class RangeElement extends BaseElement {
    *   [ja][/ja]
    */
   get value() {
-    return this._input.value;
+    return this._input === null
+      ? this.getAttribute('value')
+      : this._input.value;
   }
 
   set value(val) {
@@ -186,6 +189,4 @@ class RangeElement extends BaseElement {
   }
 }
 
-window.OnsRangeElement = document.registerElement('ons-range', {
-  prototype: RangeElement.prototype
-});
+customElements.define('ons-range', RangeElement);

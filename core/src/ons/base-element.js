@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 function getElementClass() {
-  if (typeof HTMLElement !== 'function') {
+  if (typeof HTMLElement !== 'function') { // case of Safari
     const BaseElement = () => {};
     BaseElement.prototype = document.createElement('div');
     return BaseElement;
@@ -26,4 +26,11 @@ function getElementClass() {
 }
 
 export default class BaseElement extends getElementClass() {
+  constructor(self) {
+    self = super(self);
+    self.init();
+    return self;
+  }
+
+  init() { }
 }

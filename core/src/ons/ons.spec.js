@@ -18,6 +18,14 @@ describe('ons', () => {
     template = null;
   });
 
+  it('should have defaultPageLoader property', () => {
+    expect(!!ons.defaultPageLoader).to.be.true;
+  });
+
+  it('should have PageLoader property', () => {
+    expect(!!ons.PageLoader).to.be.true;
+  });
+
   describe('#disableAutoStatusBarFill()', () => {
     it('sets autoStatusBarFill to false', () => {
       const tmp = ons.isReady;
@@ -86,7 +94,7 @@ describe('ons', () => {
       expect(() => ons.createPopover(null)).to.throw(Error);
     });
 
-    it('calls the linking function', (done) => {
+    onlyChrome(it)('calls the linking function', (done) => {
       const options = {};
       options.link = () => { return; };
       var spy = chai.spy.on(options, 'link');
@@ -97,9 +105,9 @@ describe('ons', () => {
       });
     });
 
-    it('returns a valid popover element', (done) => {
+    onlyChrome(it)('returns a valid popover element', (done) => {
       ons.createPopover('page.html').then((element) => {
-        expect(element).to.be.instanceof(OnsPopoverElement);
+        expect(element).to.be.instanceof(window.ons.PopoverElement);
         element.remove();
         done();
       });
@@ -111,7 +119,7 @@ describe('ons', () => {
       expect(() => ons.createDialog(null)).to.throw(Error);
     });
 
-    it('calls the linking function', (done) => {
+    onlyChrome(it)('calls the linking function', (done) => {
       const options = {};
       options.link = () => { return; };
       var spy = chai.spy.on(options, 'link');
@@ -122,9 +130,9 @@ describe('ons', () => {
       });
     });
 
-    it('returns a valid dialog element', (done) => {
+    onlyChrome(it)('returns a valid dialog element', (done) => {
       ons.createDialog('page.html').then((element) => {
-        expect(element).to.be.instanceof(OnsDialogElement);
+        expect(element).to.be.instanceof(window.ons.DialogElement);
         element.remove();
         done();
       });
@@ -136,7 +144,7 @@ describe('ons', () => {
       expect(() => ons.createAlertDialog(null)).to.throw(Error);
     });
 
-    it('calls the linking function', (done) => {
+    onlyChrome(it)('calls the linking function', (done) => {
       const options = {};
       options.link = () => { return; };
       var spy = chai.spy.on(options, 'link');
@@ -147,9 +155,9 @@ describe('ons', () => {
       });
     });
 
-    it('returns a valid alertDialog element', (done) => {
+    onlyChrome(it)('returns a valid alertDialog element', (done) => {
       ons.createAlertDialog('page.html').then((element) => {
-        expect(element).to.be.instanceof(OnsAlertDialogElement);
+        expect(element).to.be.instanceof(window.ons.AlertDialogElement);
         element.remove();
         done();
       });

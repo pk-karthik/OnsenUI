@@ -15,11 +15,12 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
 
+const defaultClassName = 'list__header';
 const scheme = {'': 'list__header--*'};
 
 /**
@@ -34,7 +35,7 @@ const scheme = {'': 'list__header--*'};
  * @seealso ons-list-item
  *   [en]The `<ons-list-item>` component[/en]
  *   [ja]ons-list-itemコンポーネント[/ja]
- * @guide UsingList [en]Using lists[/en][ja]リストを使う[/ja]
+ * @guide lists [en]Using lists[/en][ja]リストを使う[/ja]
  * @codepen yxcCt
  * @tutorial vanilla/Reference/list
  * @modifier material
@@ -47,7 +48,7 @@ const scheme = {'': 'list__header--*'};
  *   <ons-list-item>Item</ons-list-item>
  * </ons-list>
  */
-class ListHeaderElement extends BaseElement {
+export default class ListHeaderElement extends BaseElement {
 
   /**
    * @attribute modifier
@@ -56,28 +57,33 @@ class ListHeaderElement extends BaseElement {
    *   [en]The appearance of the list header.[/en]
    *   [ja]ヘッダーの表現を指定します。[/ja]
    */
-  createdCallback() {
-    if (!this.hasAttribute('_compiled')) {
-      this._compile();
-    }
+
+  init() {
+    this._compile();
   }
 
   _compile() {
     autoStyle.prepare(this);
-
-    this.classList.add('list__header');
+    this.classList.add(defaultClassName);
     ModifierUtil.initModifier(this, scheme);
+  }
 
-    this.setAttribute('_compiled', '');
+  static get observedAttributes() {
+    return ['modifier', 'class'];
   }
 
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
-      return ModifierUtil.onModifierChanged(last, current, this, scheme);
+    switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
+      case 'modifier':
+        ModifierUtil.onModifierChanged(last, current, this, scheme);
+        break;
     }
   }
 }
 
-window.OnsListHeaderElement = document.registerElement('ons-list-header', {
-  prototype: ListHeaderElement.prototype
-});
+customElements.define('ons-list-header', ListHeaderElement);

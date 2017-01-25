@@ -15,12 +15,14 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import internal from 'ons/internal';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
-import contentReady from 'ons/content-ready';
+import util from '../ons/util';
+import internal from '../ons/internal';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+import contentReady from '../ons/content-ready';
+
+const defaultClassName = 'navigation-bar';
 
 const scheme = {
   '': 'navigation-bar--*',
@@ -31,13 +33,16 @@ const scheme = {
 
 /**
  * @element ons-toolbar
- * @category toolbar
+ * @category page
  * @modifier material
  *   [en]Material Design toolbar.[/en]
  *   [ja][/ja]
  * @modifier transparent
  *   [en]Transparent toolbar[/en]
  *   [ja]透明な背景を持つツールバーを表示します。[/ja]
+ * @modifier noshadow
+ *   [en]Toolbar without shadow[/en]
+ *   [ja]ツールバーに影を付けずに表示します。[/ja]
  * @description
  *   [en]
  *     Toolbar component that can be used with navigation.
@@ -48,8 +53,8 @@ const scheme = {
  *   [/en]
  *   [ja]ナビゲーションで使用するツールバー用コンポーネントです。クラス名により、左、中央、右のコンテナを指定できます。[/ja]
  * @codepen aHmGL
- * @tutorial vanilla/Reference/button
- * @guide Addingatoolbar [en]Adding a toolbar[/en][ja]ツールバーの追加[/ja]
+ * @tutorial vanilla/Reference/page
+ * @guide adding-a-toolbar [en]Adding a toolbar[/en][ja]ツールバーの追加[/ja]
  * @seealso ons-bottom-toolbar
  *   [en]The `<ons-bottom-toolbar>` displays a toolbar on the bottom of the page.[/en]
  *   [ja]ons-bottom-toolbarコンポーネント[/ja]
@@ -79,7 +84,7 @@ const scheme = {
  * </ons-page>
  */
 
-class ToolbarElement extends BaseElement {
+export default class ToolbarElement extends BaseElement {
 
   /**
    * @attribute inline
@@ -96,36 +101,26 @@ class ToolbarElement extends BaseElement {
    *   [ja]ツールバーの表現を指定します。[/ja]
    */
 
-  createdCallback() {
+  init() {
     contentReady(this, () => {
-      if (!this.hasAttribute('_compiled')) {
-        this._compile();
-      }
+      this._compile();
     });
+  }
 
-    this._tryToEnsureNodePosition();
-    setImmediate(() => this._tryToEnsureNodePosition());
+  static get observedAttributes() {
+    return ['modifier', 'class'];
   }
 
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
-      return ModifierUtil.onModifierChanged(last, current, this, scheme);
-    }
-  }
-
-  attachedCallback() {
-    this._tryToEnsureNodePosition();
-    setImmediate(() => this._tryToEnsureNodePosition());
-  }
-
-  _tryToEnsureNodePosition() {
-    if (!this.parentNode || this.hasAttribute('inline')) {
-      return;
-    }
-    const page = util.findParent(this, 'ons-page');
-
-    if (page && page !== this.parentNode) {
-      page._registerToolbar(this);
+    switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
+      case 'modifier':
+        ModifierUtil.onModifierChanged(last, current, this, scheme);
+        break;
     }
   }
 
@@ -157,12 +152,18 @@ class ToolbarElement extends BaseElement {
     return this.querySelector('ons-back-button .back-button__label') || internal.nullElement;
   }
 
+  /**
+   * @return {HTMLElement}
+   */
+  _getToolbarBackButtonIconElement() {
+    return this.querySelector('ons-back-button .back-button__icon') || internal.nullElement;
+  }
+
   _compile() {
     autoStyle.prepare(this);
-    this.classList.add('navigation-bar');
+    this.classList.add(defaultClassName);
     this._ensureToolbarItemElements();
     ModifierUtil.initModifier(this, scheme);
-    this.setAttribute('_compiled', '');
   }
 
   _ensureToolbarItemElements() {
@@ -189,15 +190,17 @@ class ToolbarElement extends BaseElement {
   }
 
   _ensureToolbarElement(name) {
-    const element = util.findChild(this, '.' + name) || util.create('.' + name);
+    if (util.findChild(this, '.navigation-bar__' + name)) {
+      const element = util.findChild(this, '.navigation-bar__' + name);
+      element.classList.add(name);
+      return element;
+    }
 
+    const element = util.findChild(this, '.' + name) || util.create('.' + name);
     element.classList.add('navigation-bar__' + name);
 
     return element;
   }
 }
 
-window.OnsToolbarElement = document.registerElement('ons-toolbar', {
-  prototype: ToolbarElement.prototype
-});
-
+customElements.define('ons-toolbar', ToolbarElement);

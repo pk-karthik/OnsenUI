@@ -15,10 +15,12 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import internal from 'ons/internal';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import internal from '../ons/internal';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+import {PageLoader, defaultPageLoader} from '../ons/page-loader';
+import contentReady from '../ons/content-ready';
 
 const rewritables = {
   /**
@@ -27,22 +29,12 @@ const rewritables = {
    */
   ready(element, callback) {
     setImmediate(callback);
-  },
-
-  /**
-   * @param {Element} element
-   * @param {HTMLFragment} target
-   * @param {Object} options
-   * @param {Function} callback
-   */
-  link(element, target, options, callback) {
-    callback(target);
   }
 };
 
 /**
  * @element ons-splitter-content
- * @category splitter
+ * @category menu
  * @description
  *  [en]
  *    The `<ons-splitter-content>` element is used as a child element of `<ons-splitter>`.
@@ -52,6 +44,9 @@ const rewritables = {
  *  [ja]ons-splitter-content要素は、ons-splitter要素の子要素として利用します。[/ja]
  * @codepen rOQOML
  * @tutorial vanilla/Reference/splitter
+ * @guide multiple-page-navigation
+ *  [en]Managing multiple pages.[/en]
+ *  [ja]Managing multiple pages[/ja]
  * @seealso ons-splitter
  *  [en]The `<ons-splitter>` component is the parent element.[/en]
  *  [ja]ons-splitterコンポーネント[/ja]
@@ -69,7 +64,7 @@ const rewritables = {
  *   </ons-splitter-side>
  * </ons-splitter>
  */
-class SplitterContentElement extends BaseElement {
+export default class SplitterContentElement extends BaseElement {
 
   /**
    * @attribute page
@@ -82,35 +77,77 @@ class SplitterContentElement extends BaseElement {
    *   [/en]
    *   [ja]ons-splitter-content要素に表示するページのURLを指定します。[/ja]
    */
-  createdCallback() {
+
+  init() {
     this._page = null;
+    this._pageLoader = defaultPageLoader;
+
+    contentReady(this, () => {
+      const page = this._getPageTarget();
+
+      if (page) {
+        this.load(page);
+      }
+    });
   }
 
-  attachedCallback() {
+  connectedCallback() {
     if (!util.match(this.parentNode, 'ons-splitter')) {
       throw new Error(`"ons-splitter-content" must have "ons-splitter" as parentNode.`);
     }
-    this.attributeChangedCallback('page', null, this.getAttribute('page'));
   }
 
-  detachedCallback() {}
+  _getPageTarget() {
+    return this._page || this.getAttribute('page');
+  }
+
+  disconnectedCallback() {}
+
+  static get observedAttributes() {
+    return [];
+  }
 
   attributeChangedCallback(name, last, current) {
-    if (name === 'page' && current !== null) {
-      rewritables.ready(this, () => this.load(current));
-    }
   }
 
   /**
    * @property page
-   * @readonly
    * @type {HTMLElement}
    * @description
-   *   [en]Page element loaded in the splitter content.[/en]
-   *   [ja][/ja]
+   *   [en]The page to load in the splitter content.[/en]
+   *   [ja]この要素内に表示するページを指定します。[/ja]
    */
   get page() {
     return this._page;
+  }
+
+  /**
+   * @param {*} page
+   */
+  set page(page) {
+    this._page = page;
+  }
+
+  get _content() {
+    return this.children[0];
+  }
+
+  /**
+   * @property pageLoader
+   * @type {Function}
+   * @description
+   *   [en]Page element loaded in the splitter content.[/en]
+   *   [ja]この要素内に表示するページを指定します。[/ja]
+   */
+  get pageLoader() {
+    return this._pageLoader;
+  }
+
+  set pageLoader(loader) {
+    if (!(loader instanceof PageLoader)) {
+      throw Error('First parameter must be an instance of PageLoader');
+    }
+    this._pageLoader = loader;
   }
 
   /**
@@ -126,42 +163,45 @@ class SplitterContentElement extends BaseElement {
    *   [ja]指定したURLをメインページを読み込みます。[/ja]
    * @return {Promise}
    *   [en]Resolves to the new `<ons-page>` element[/en]
-   *   [ja][/ja]
+   *   [ja]`<ons-page>`要素を解決するPromiseオブジェクトを返します。[/ja]
    */
   load(page, options = {}) {
     this._page = page;
-    const callback = options.callback;
+    const callback = options.callback || function() {};
 
-    return internal.getPageHTMLAsync(page).then(html => new Promise(resolve => {
-      rewritables.link(this, util.createFragment(html), options, fragment => {
-        this._hide();
-        this.innerHTML = '';
+    return new Promise(resolve => {
+      let oldContent = this._content || null;
 
-        this.appendChild(fragment);
+      this._pageLoader.load({page, parent: this}, pageElement => {
+        if (oldContent) {
+          this._pageLoader.unload(oldContent);
+          oldContent = null;
+        }
 
-        this._show();
-        callback && callback();
-        resolve(this.firstChild);
+        setImmediate(() => this._show());
+
+        callback(pageElement);
+        resolve(pageElement);
       });
-    }));
+    });
   }
 
   _show() {
-    util.propagateAction(this, '_show');
+    this._content._show();
   }
 
   _hide() {
-    util.propagateAction(this, '_hide');
+    this._content._hide();
   }
 
   _destroy() {
-    util.propagateAction(this, '_destroy');
+    this._pageLoader.unload(this._content);
     this.remove();
+  }
+
+  static get rewritables() {
+    return rewritables;
   }
 }
 
-window.OnsSplitterContentElement = document.registerElement('ons-splitter-content', {
-  prototype: SplitterContentElement.prototype
-});
-
-window.OnsSplitterContentElement.rewritables = rewritables;
+customElements.define('ons-splitter-content', SplitterContentElement);

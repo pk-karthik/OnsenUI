@@ -11,10 +11,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+
+const defaultClassName = 'fab fab--mini speed-dial__item';
 
 const scheme = {
   '': 'speed-dial__item--*',
@@ -22,7 +24,7 @@ const scheme = {
 
 /**
  * @element ons-speed-dial-item
- * @category speed-dial
+ * @category control
  * @description
  *   [en]
  *     This component displays the child elements of the Material Design Speed dial component.
@@ -35,6 +37,9 @@ const scheme = {
  * @seealso ons-speed-dial
  *   [en]The `<ons-speed-dial>` component.[/en]
  *   [ja]ons-speed-dialコンポーネント[/ja]
+ * @seealso ons-fab
+ *   [en]ons-fab component[/en]
+ *   [ja]ons-fabコンポーネント[/ja]
  * @example
  * <ons-speed-dial position="left bottom">
  *   <ons-fab>
@@ -45,7 +50,7 @@ const scheme = {
  *   <ons-speed-dial-item>C</ons-speed-dial-item>
  * </ons-speed-dial>
  */
-class SpeedDialItemElement extends BaseElement {
+export default class SpeedDialItemElement extends BaseElement {
 
   /**
    * @attribute modifier
@@ -55,14 +60,20 @@ class SpeedDialItemElement extends BaseElement {
    *   [ja]このコンポーネントの表現を指定します。[/ja]
    */
 
-  createdCallback() {
+  init() {
     this._compile();
-
     this._boundOnClick = this._onClick.bind(this);
+  }
+
+  static get observedAttributes() {
+    return ['modifier', 'ripple', 'class'];
   }
 
   attributeChangedCallback(name, last, current) {
     switch (name) {
+      case 'class':
+        this._updateClassName(current);
+        break;
       case 'modifier':
         ModifierUtil.onModifierChanged(last, current, this, scheme);
         break;
@@ -71,11 +82,19 @@ class SpeedDialItemElement extends BaseElement {
     }
   }
 
-  attachedCallback() {
+  _updateClassName(className) {
+    if (!defaultClassName.split(/\s+/).every(token => {
+      return this.classList.contains(token);
+    })) {
+      this.className = defaultClassName + ' ' + className;
+    }
+  }
+
+  connectedCallback() {
     this.addEventListener('click', this._boundOnClick, false);
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
     this.removeEventListener('click', this._boundOnClick, false);
   }
 
@@ -90,9 +109,9 @@ class SpeedDialItemElement extends BaseElement {
   _compile() {
     autoStyle.prepare(this);
 
-    this.classList.add('fab');
-    this.classList.add('fab--mini');
-    this.classList.add('speed-dial__item');
+    defaultClassName.split(/\s+/).forEach(token => {
+      this.classList.add(token);
+    });
 
     this._updateRipple();
 
@@ -100,6 +119,4 @@ class SpeedDialItemElement extends BaseElement {
   }
 }
 
-window.OnsSpeedDialItemElement = document.registerElement('ons-speed-dial-item', {
-  prototype: SpeedDialItemElement.prototype
-});
+customElements.define('ons-speed-dial-item', SpeedDialItemElement);

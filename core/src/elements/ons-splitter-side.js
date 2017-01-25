@@ -15,23 +15,27 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import AnimatorFactory from 'ons/internal/animator-factory';
-import orientation from 'ons/orientation';
-import internal from 'ons/internal';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import AnimatorFactory from '../ons/internal/animator-factory';
+import orientation from '../ons/orientation';
+import internal from '../ons/internal';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
 import SplitterAnimator from './ons-splitter/animator';
-import GestureDetector from 'ons/gesture-detector';
-import DoorLock from 'ons/doorlock';
-import contentReady from 'ons/content-ready';
-import OnsSplitterElement from './ons-splitter';
+import GestureDetector from '../ons/gesture-detector';
+import DoorLock from '../ons/doorlock';
+import contentReady from '../ons/content-ready';
+import { PageLoader, defaultPageLoader} from '../ons/page-loader';
+import SplitterElement from './ons-splitter';
 
 const SPLIT_MODE = 'split';
 const COLLAPSE_MODE = 'collapse';
 const CLOSED_STATE = 'closed';
 const OPEN_STATE = 'open';
 const CHANGING_STATE = 'changing';
+
+const WATCHED_ATTRIBUTES = ['animation', 'width', 'side', 'collapse', 'swipeable', 'swipe-target-width', 'animation-options', 'open-threshold'];
+
 
 const rewritables = {
   /**
@@ -40,16 +44,6 @@ const rewritables = {
    */
   ready(splitterSideElement, callback) {
     setImmediate(callback);
-  },
-
-  /**
-   * @param {Element} splitterSideElement
-   * @param {HTMLFragment} target
-   * @param {Object} options
-   * @param {Function} callback
-   */
-  link(splitterSideElement, target, options, callback) {
-    callback(target);
   }
 };
 
@@ -82,8 +76,8 @@ class CollapseDetection {
 
   activate() {
     if (this._orientation) {
-      ons.orientation.on('change', this._boundOnChange);
-      this._onChange({isPortrait: ons.orientation.isPortrait()});
+      orientation.on('change', this._boundOnChange);
+      this._onChange({isPortrait: orientation.isPortrait()});
     } else {
       this._queryResult = window.matchMedia(this._target);
       this._queryResult.addListener(this._boundOnChange);
@@ -93,7 +87,7 @@ class CollapseDetection {
 
   disable() {
     if (this._orientation) {
-      ons.orientation.off('change', this._boundOnChange);
+      orientation.off('change', this._boundOnChange);
     } else if (this._queryResult) {
       this._queryResult.removeListener(this._boundOnChange);
       this._queryResult = null;
@@ -160,6 +154,7 @@ class CollapseMode {
     const direction = event.gesture.interimDirection;
     const shouldOpen = el._side !== direction && distance > width * el._threshold;
     this.executeAction(shouldOpen ? 'open' : 'close');
+    this._ignoreDrag = true;
   }
 
   layout() {
@@ -240,18 +235,21 @@ class CollapseMode {
 
 /**
  * @element ons-splitter-side
- * @category splitter
+ * @category menu
  * @description
  *  [en]
  *    The `<ons-splitter-side>` element is used as a child element of `<ons-splitter>`.
  *
- *    It will be displayed on either the left or right side of the `<ons-splitte-content>` element.
+ *    It will be displayed on either the left or right side of the `<ons-splitter-content>` element.
  *
  *    It supports two modes: collapsed and split. When it's in collapsed mode it will be hidden from view and can be displayed when the user swipes the screen or taps a button. In split mode the element is always shown. It can be configured to automatically switch between the two modes depending on the screen size.
  *  [/en]
  *  [ja]ons-splitter-side要素は、ons-splitter要素の子要素として利用します。[/ja]
  * @codepen rOQOML
  * @tutorial vanilla/Reference/splitter
+ * @guide multiple-page-navigation
+ *  [en]Managing multiple pages.[/en]
+ *  [ja]Managing multiple pages[/ja]
  * @seealso ons-splitter
  *  [en]The `<ons-splitter>` is the parent component.[/en]
  *  [ja]ons-splitterコンポーネント[/ja]
@@ -269,7 +267,7 @@ class CollapseMode {
  *   </ons-splitter-side>
  * </ons-splitter>
  */
-class SplitterSideElement extends BaseElement {
+export default class SplitterSideElement extends BaseElement {
 
   /**
    * @event modechange
@@ -439,45 +437,67 @@ class SplitterSideElement extends BaseElement {
    *   [ja]collapseモード時にスワイプ操作を有効にする場合に指定します。[/ja]
    */
 
-  createdCallback() {
+  init() {
+    this._page = null;
+    this._pageLoader = defaultPageLoader;
     this._collapseMode = new CollapseMode(this);
     this._collapseDetection = new CollapseDetection(this);
+
     this._animatorFactory = new AnimatorFactory({
-      animators: OnsSplitterElement._animatorDict,
+      animators: SplitterElement.animators,
       baseClass: SplitterAnimator,
       baseClassName: 'SplitterAnimator',
       defaultAnimation: this.getAttribute('animation')
     });
     this._boundHandleGesture = (e) => this._collapseMode.handleGesture(e);
-    this._watchedAttributes = ['animation', 'width', 'side', 'collapse', 'swipeable', 'swipe-target-width', 'animation-options', 'open-threshold', 'page'];
+    this._watchedAttributes = WATCHED_ATTRIBUTES;
+    contentReady(this, () => {
+      rewritables.ready(this, () => {
+        const page = this._getPageTarget();
+
+        if (page) {
+          this.load(page);
+        }
+      });
+    });
   }
 
-  attachedCallback() {
+  connectedCallback() {
     if (!util.match(this.parentNode, 'ons-splitter')) {
       throw new Error('Parent must be an ons-splitter element.');
     }
 
     this._gestureDetector = new GestureDetector(this.parentElement, {dragMinDistance: 1});
 
-    if (!this.hasAttribute('side')) {
-      this.setAttribute('side', 'left');
-    }
-
     contentReady(this, () => {
       this._watchedAttributes.forEach(e => this._update(e));
     });
+
+    if (!this.hasAttribute('side')) {
+      this.setAttribute('side', 'left');
+    }
   }
 
-  detachedCallback() {
+  _getPageTarget() {
+    return this._page || this.getAttribute('page');
+  }
+
+  get side() {
+    return this.getAttribute('side') === 'right' ? 'right' : 'left';
+  }
+
+  disconnectedCallback() {
     this._collapseDetection.disable();
     this._gestureDetector.dispose();
     this._gestureDetector = null;
   }
 
+  static get observedAttributes() {
+    return WATCHED_ATTRIBUTES;
+  }
+
   attributeChangedCallback(name, last, current) {
-    if (this._watchedAttributes.indexOf(name) !== -1) {
-      this._update(name, current);
-    }
+    this._update(name, current);
   }
 
   _update(name, value) {
@@ -523,12 +543,6 @@ class SplitterSideElement extends BaseElement {
     }
   }
 
-  _updatePage(page = this.getAttribute('page')) {
-    if (page !== null) {
-      rewritables.ready(this, () => this.load(page));
-    }
-  }
-
   _updateOpenThreshold(threshold = this.getAttribute('open-threshold')) {
     this._threshold = Math.max(0, Math.min(1, parseFloat(threshold) || 0.3));
   }
@@ -545,9 +559,17 @@ class SplitterSideElement extends BaseElement {
     this._swipeTargetWidth = Math.max(0, parseInt(value) || 0);
   }
 
-  _updateWidth(width = this.getAttribute('width')) {
-    this._width = /^\d+(px|%)$/.test(width) ? width : '80%';
+  _updateWidth() {
     this.style.width = this._width;
+  }
+
+  get _width() {
+    const width = this.getAttribute('width');
+    return /^\d+(px|%)$/.test(width) ? width : '80%';
+  }
+
+  set _width(value) {
+    this.setAttribute('width', value);
   }
 
   _updateSide(side = this.getAttribute('side')) {
@@ -565,14 +587,41 @@ class SplitterSideElement extends BaseElement {
 
   /**
    * @property page
-   * @readonly
-   * @type {HTMLElement}
+   * @type {*}
    * @description
-   *   [en]Page element loaded in the splitter side.[/en]
-   *   [ja][/ja]
+   *   [en]Page location to load in the splitter side.[/en]
+   *   [ja]この要素内に表示するページを指定します。[/ja]
    */
   get page() {
     return this._page;
+  }
+
+  /**
+   * @param {*} page
+   */
+  set page(page) {
+    this._page = page;
+  }
+
+  get _content() {
+    return this.children[0];
+  }
+
+  /**
+   * @property pageLoader
+   * @description
+   *   [en][/en]
+   *   [ja][/ja]
+   */
+  get pageLoader() {
+    return this._pageLoader;
+  }
+
+  set pageLoader(loader) {
+    if (!(loader instanceof PageLoader)) {
+      throw Error('First parameter must be an instance of PageLoader.');
+    }
+    this._pageLoader = loader;
   }
 
   /**
@@ -671,38 +720,41 @@ class SplitterSideElement extends BaseElement {
    */
   load(page, options = {}) {
     this._page = page;
-    const callback = options.callback;
+    const callback = options.callback || (() => {});
 
-    return internal.getPageHTMLAsync(page).then(html => new Promise(resolve => {
-      rewritables.link(this, util.createFragment(html), options, fragment => {
-        this._hide();
+    return new Promise(resolve => {
+      let oldContent = this._content || null;
 
-        this.innerHTML = '';
-        this.appendChild(fragment);
+      this._pageLoader.load({page, parent: this}, pageElement => {
+        if (oldContent) {
+          this._pageLoader.unload(oldContent);
+          oldContent = null;
+        }
 
-        this._show();
-        callback && callback();
-        resolve(this.firstChild);
+        setImmediate(() => this._show());
+
+        callback(pageElement);
+        resolve(pageElement);
       });
-    }));
+    });
   }
 
   _show() {
-    util.propagateAction(this, '_show');
+    this._content._show();
   }
 
   _hide() {
-    util.propagateAction(this, '_hide');
+    this._content._hide();
   }
 
   _destroy() {
-    util.propagateAction(this, '_destroy');
+    this._pageLoader.unload(this._content);
     this.remove();
+  }
+
+  static get rewritables() {
+    return rewritables;
   }
 }
 
-window.OnsSplitterSideElement = document.registerElement('ons-splitter-side', {
-  prototype: SplitterSideElement.prototype
-});
-
-window.OnsSplitterSideElement.rewritables = rewritables;
+customElements.define('ons-splitter-side', SplitterSideElement);

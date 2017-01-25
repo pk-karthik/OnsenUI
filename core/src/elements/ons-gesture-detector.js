@@ -15,29 +15,45 @@ limitations under the License.
 
 */
 
-import BaseElement from 'ons/base-element';
-import GestureDetector from 'ons/gesture-detector';
+import BaseElement from '../ons/base-element';
+import GestureDetector from '../ons/gesture-detector';
 
 /**
  * @element ons-gesture-detector
  * @category gesture
  * @description
- *   [en]Component to detect finger gestures within the wrapped element. See the guide for more details.[/en]
+ *   [en]
+ *     Component to detect finger gestures within the wrapped element. Following gestures are supported:
+ *     - Drag gestures: `drag`, `dragleft`, `dragright`, `dragup`, `dragdown`
+ *     - Hold gestures: `hold`, `release`
+ *     - Swipe gestures: `swipe`, `swipeleft`, `swiperight`, `swipeup`, `swipedown`
+ *     - Tap gestures: `tap`, `doubletap`
+ *     - Pinch gestures: `pinch`, `pinchin`, `pinchout`
+ *     - Other gestures: `touch`, `transform`, `rotate`
+ *   [/en]
  *   [ja]要素内のジェスチャー操作を検知します。詳しくはガイドを参照してください。[/ja]
- * @guide DetectingFingerGestures
+ * @guide gesture-detector
  *   [en]Detecting finger gestures[/en]
  *   [ja]ジェスチャー操作の検知[/ja]
  * @example
- * <ons-gesture-detector style="height: 100%; width: 100%;">
- *   ...
+ * <ons-gesture-detector>
+ *   <div id="detect-area" style="width: 100px; height: 100px;">
+ *     Swipe Here
+ *   </div>
  * </ons-gesture-detector>
+ *
+ * <script>
+ *   document.addEventListener('swipeleft', function(event) {
+ *     if (event.target.matches('#detect-area')) {
+ *       console.log('Swipe left is detected.');
+ *     }
+ *   });
+ * </script>
  */
-class GestureDetectorElement extends BaseElement {
-  createdCallback() {
+export default class GestureDetectorElement extends BaseElement {
+  init() {
     this._gestureDetector = new GestureDetector(this);
   }
 }
 
-window.OnsGestureDetectorElement = document.registerElement('ons-gesture-detector', {
-  prototype: GestureDetectorElement.prototype
-});
+customElements.define('ons-gesture-detector', GestureDetectorElement);

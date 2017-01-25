@@ -6,9 +6,9 @@ describe('OnsCarouselElement', () => {
   beforeEach(() => {
     carousel = ons._util.createElement(`
       <ons-carousel>
-      <ons-carousel-item>Item 1</ons-carousel-item>
-      <ons-carousel-item>Item 2</ons-carousel-item>
-      <ons-carousel-item>Item 3</ons-carousel-item>
+        <ons-carousel-item>Item 1</ons-carousel-item>
+        <ons-carousel-item>Item 2</ons-carousel-item>
+        <ons-carousel-item>Item 3</ons-carousel-item>
       </ons-carosel>
     `);
     document.body.appendChild(carousel);
@@ -20,11 +20,11 @@ describe('OnsCarouselElement', () => {
   });
 
   it('should exist', () => {
-    expect(window.OnsCarouselElement).to.be.ok;
+    expect(window.ons.CarouselElement).to.be.ok;
   });
 
   describe('#_updateSwipeable()', () => {
-    it('attaches and removes listeners', () => {
+    onlyChrome(it)('attaches and removes listeners', () => {
       const spyOn = chai.spy.on(carousel._gestureDetector, 'on'),
         spyOff = chai.spy.on(carousel._gestureDetector, 'off');
 
@@ -37,7 +37,7 @@ describe('OnsCarouselElement', () => {
   });
 
   describe('#_updateAutoRefresh()', () => {
-    it('starts and stops observing', () => {
+    onlyChrome(it)('starts and stops observing', () => {
       const spyOn = chai.spy.on(carousel._mutationObserver, 'observe'),
         spyOff = chai.spy.on(carousel._mutationObserver, 'disconnect');
 
@@ -77,7 +77,7 @@ describe('OnsCarouselElement', () => {
   });
 
   describe('#_onDirectionChange()', () => {
-    it('is fired when the \'direction\' attribute is changed', () => {
+    onlyChrome(it)('is fired when the \'direction\' attribute is changed', () => {
       const spy = chai.spy.on(carousel, '_onDirectionChange');
       carousel.setAttribute('direction', 'vertical');
       carousel.setAttribute('direction', 'horizontal');
@@ -167,7 +167,7 @@ describe('OnsCarouselElement', () => {
       expect(carousel.getActiveIndex()).to.equal(2);
     });
 
-    it('should fire \'postchange\' event', () => {
+    onlyChrome(it)('should fire \'postchange\' event', () => {
       const promise = new Promise((resolve) =>
         carousel.addEventListener('postchange', resolve)
       );
@@ -176,7 +176,7 @@ describe('OnsCarouselElement', () => {
       return expect(promise).to.eventually.be.fulfilled;
     });
 
-    it('returns a promise that resolves to the element', () => {
+    onlyChrome(it)('returns a promise that resolves to the element', () => {
       return expect(carousel.setActiveIndex(1)).to.be.eventually.fulfilled.then(element => {
         expect(element).to.equal(carousel);
         expect(element.getActiveIndex()).to.equal(1);
@@ -271,7 +271,7 @@ describe('OnsCarouselElement', () => {
   });
 
   describe('#_onDragEnd()', () => {
-    let ev;
+    let ev, last;
 
     beforeEach(() => {
       ev = new CustomEvent('drag');
@@ -281,12 +281,20 @@ describe('OnsCarouselElement', () => {
         velocityX: -10,
         preventDefault: () => {}
       };
+      last = new CustomEvent('drag');
+      last.gesture = {
+        direction: 'left',
+        deltaX: -2,
+        velocityX: -2,
+        preventDefault: () => {}
+      };
     });
 
     it('should work if carousel is swipeable', () => {
       carousel.swipeable = true;
+      carousel._lastDragEvent = last;
       carousel._onDragEnd(ev);
-      expect(carousel._scroll).to.not.equal(0);
+      expect(carousel._lastDragEvent).not.to.be.ok;
     });
 
     it('should call \'_scrollToKillOverScroll\' if overscrolled', () => {
@@ -297,6 +305,7 @@ describe('OnsCarouselElement', () => {
       ev.gesture.velocityX = 10;
 
       const spy = chai.spy.on(carousel, '_scrollToKillOverScroll');
+      carousel._lastDragEvent = last;
       carousel._onDragEnd(ev);
       expect(spy).to.be.called.once;
     });
@@ -309,7 +318,7 @@ describe('OnsCarouselElement', () => {
       expect(rv.length).to.equal(3);
 
       for (let i = 0; i < rv.length; i++) {
-        expect(rv[i]).to.be.an.instanceof(OnsCarouselItemElement);
+        expect(rv[i]).to.be.an.instanceof(ons.CarouselItemElement);
       }
     });
 

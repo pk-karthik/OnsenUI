@@ -3,9 +3,9 @@
 describe('OnsRippleElement', () => {
   let container, ripple, wave, background;
 
-  const spyOn = chai.spy.on.bind(chai.spy, OnsRippleElement.prototype);
+  const spyOn = chai.spy.on.bind(chai.spy, ons.RippleElement.prototype);
 
-  beforeEach(() => {
+  beforeEach(done => {
     container = ons._util.createElement(`
       <button>
         <ons-ripple></ons-ripple>
@@ -16,8 +16,12 @@ describe('OnsRippleElement', () => {
 
     ripple = container.querySelector('ons-ripple');
     ripple.removeAttribute('disabled');
-    wave = ripple._wave;
-    background = ripple._background;
+
+    ons._contentReady(ripple, () => {
+      wave = ripple._wave;
+      background = ripple._background;
+      done();
+    });
   });
 
   afterEach(() => {
@@ -26,36 +30,43 @@ describe('OnsRippleElement', () => {
   });
 
   it('exists', () => {
-    expect(window.OnsRippleElement).to.be.ok;
+    expect(window.ons.RippleElement).to.be.ok;
+  });
+
+  onlyChrome(describe)('class attribute', () => {
+    it('should contain "ripple" class name automatically', () => {
+      const element = new ons.RippleElement();
+      element.setAttribute('class', 'foobar');
+      expect(element.classList.contains('ripple')).to.be.ok;
+      expect(element.classList.contains('foobar')).to.be.ok;
+    });
   });
 
   describe('#_compile()', () => {
-    it('is called when an element is created', () => {
+    it('is called when an element is created', done => {
       const spy = spyOn('_compile'),
-        _ = new OnsRippleElement();
+        _ = new ons.RippleElement();
 
-      expect(spy).to.have.been.called.once;
+      ons._contentReady(_, () => {
+        expect(spy).to.have.been.called.once;
+        done();
+      });
     });
 
-    it('is not called when an element is copied', () => {
-      const spy = spyOn('_compile'),
-        div1 = document.createElement('div'),
-        div2 = document.createElement('div');
-
-      div1.innerHTML = '<ons-ripple></ons-ripple>';
-      div2.innerHTML = div1.innerHTML;
-
-      expect(spy).to.have.been.called.once;
-      expect(div1.innerHTML).to.equal(div2.innerHTML);
-      expect(div1.isEqualNode(div2)).to.be.true;
+    it('creates a "wave" element', done => {
+      const ripple = new ons.RippleElement();
+      ons._contentReady(ripple, () => {
+        expect(ripple._wave).to.be.an.instanceof(HTMLElement);
+        done();
+      });
     });
 
-    it('creates a "wave" element', () => {
-      expect((new OnsRippleElement())._wave).to.be.an.instanceof(HTMLElement);
-    });
-
-    it('creates a "background" element', () => {
-      expect((new OnsRippleElement())._background).to.be.an.instanceof(HTMLElement);
+    it('creates a "background" element', done => {
+      const ripple = new ons.RippleElement();
+      ons._contentReady(ripple, () => {
+        expect(ripple._background).to.be.an.instanceof(HTMLElement);
+        done();
+      });
     });
   });
 
@@ -64,22 +75,22 @@ describe('OnsRippleElement', () => {
 
     it('is called when an element is created', () => {
       const spy = spyOn('attributeChangedCallback'),
-        _ = new OnsRippleElement();
+        _ = new ons.RippleElement();
 
       expect(spy).to.have.been.called.exactly(attributes.length);
     });
 
-    it('sets the color of the wave based on the "color" attribute', () => {
+    onlyChrome(it)('sets the color of the wave based on the "color" attribute', () => {
       ripple.setAttribute('color', 'black');
       expect(wave.style.background).to.equal('black');
     });
 
-    it('sets the color of the background based on the "color" attribute', () => {
+    onlyChrome(it)('sets the color of the background based on the "color" attribute', () => {
       ripple.setAttribute('color', 'black');
       expect(background.style.background).to.equal('black');
     });
 
-    it('sets the color of the background based on the "background" attribute', () => {
+    onlyChrome(it)('sets the color of the background based on the "background" attribute', () => {
       ripple.setAttribute('color', 'black');
       ripple.setAttribute('background', 'rgb(0, 255, 255)');
       expect(background.style.background).to.equal('rgb(0, 255, 255)');
@@ -87,12 +98,12 @@ describe('OnsRippleElement', () => {
       expect(background.style.background).to.equal('rgb(0, 255, 255)');
     });
 
-    it('disables background if the "background" attribute is "none"', () => {
+    onlyChrome(it)('disables background if the "background" attribute is "none"', () => {
       ripple.setAttribute('background', 'none');
       expect(background.hasAttribute('disabled')).to.be.true;
     });
 
-    it('makes sure the background is enabled if "background != none"', () => {
+    onlyChrome(it)('makes sure the background is enabled if "background != none"', () => {
       background.setAttribute('disabled', 'disabled');
       ripple.setAttribute('background', 'rgb(0, 123, 5)');
       expect(background.hasAttribute('disabled')).to.be.false;
@@ -126,7 +137,7 @@ describe('OnsRippleElement', () => {
       expect(coords.r).to.equal(500);
     });
 
-    it('cares about it\'s center', () => {
+    onlyChrome(it)('cares about it\'s center', () => {
       ons._util.extend(ripple.style, style);
       ripple.setAttribute('center', 'true');
       const coords = ripple._calculateCoords({clientY: 0, clientX: 0});
@@ -140,13 +151,15 @@ describe('OnsRippleElement', () => {
   const itCalls = calling => {
     return {
       whenUsing: (whenUsing, ...rest) => {
-        it(`calls ${calling}`, () => {
+        it(`calls ${calling}`, done => {
           const spy = spyOn(calling),
-            ripple = new OnsRippleElement();
+            ripple = new ons.RippleElement();
 
-
-          ripple[whenUsing].apply(ripple, rest);
-          expect(spy).to.have.been.called.once;
+          ons._contentReady(ripple, () => {
+            ripple[whenUsing].apply(ripple, rest);
+            expect(spy).to.have.been.called.once;
+            done();
+          });
         });
       }
     };
@@ -181,7 +194,7 @@ describe('OnsRippleElement', () => {
   });
 
   describe('#_onHold()', () => {
-    it('sets _holding', () => {
+    onlyChrome(it)('sets _holding', () => {
       expect(ripple._holding).to.not.be.ok;
       ripple._onHold(e);
       expect(ripple._holding).to.be.ok;
@@ -191,7 +204,7 @@ describe('OnsRippleElement', () => {
   describe('#_onDragStart()', () => {
     itCalls('_rippleAnimation').whenUsing('_onDragStart', e);
 
-    it('calls _onRelease', () => {
+    onlyChrome(it)('calls _onRelease', () => {
       const spy = spyOn('_onRelease');
 
       ripple._onHold(e);
@@ -201,7 +214,7 @@ describe('OnsRippleElement', () => {
   });
 
   describe('#_onRelease()', () => {
-    it('unsets _holding', () => {
+    onlyChrome(it)('unsets _holding', () => {
       ripple._onHold(e);
       expect(ripple._holding).to.be.ok;
       ripple._onRelease(e);

@@ -11,13 +11,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import BaseElement from 'ons/base-element';
-import util from 'ons/util';
-import {LazyRepeatDelegate, LazyRepeatProvider} from 'ons/internal/lazy-repeat';
+import BaseElement from '../ons/base-element';
+import util from '../ons/util';
+import {LazyRepeatDelegate, LazyRepeatProvider} from '../ons/internal/lazy-repeat';
 
 /**
  * @element ons-lazy-repeat
- * @category lazy-repeat
+ * @category list
  * @description
  *   [en]
  *     Using this component a list with millions of items can be rendered without a drop in performance.
@@ -34,9 +34,9 @@ import {LazyRepeatDelegate, LazyRepeatProvider} from 'ons/internal/lazy-repeat';
  * @seealso ons-list
  *   [en]The `<ons-list>` element is used to render a list.[/en]
  *   [ja]`<ons-list>`要素はリストを描画するのに使われます。[/ja]
- * @guide UsingLazyRepeat
- *   [en]How to use Lazy Repeat[/en]
- *   [ja]レイジーリピートの使い方[/ja]
+ * @guide infinite-scroll
+ *   [en]Loading more items on infinite scroll[/en]
+ *   [ja]Loading more items on infinite scroll[/ja]
  * @example
  * <script>
  *   window.addEventListener('load', function() {
@@ -64,13 +64,9 @@ import {LazyRepeatDelegate, LazyRepeatProvider} from 'ons/internal/lazy-repeat';
  *   </ons-lazy-repeat>
  * </ons-list>
  */
-class LazyRepeatElement extends BaseElement {
+export default class LazyRepeatElement extends BaseElement {
 
-  createdCallback() {
-    this.style.display = 'none';
-  }
-
-  attachedCallback() {
+  connectedCallback() {
     util.updateParentPosition(this);
 
     // not very good idea and also not documented
@@ -174,7 +170,7 @@ class LazyRepeatElement extends BaseElement {
 
   attributeChangedCallback(name, last, current) {}
 
-  detachedCallback() {
+  disconnectedCallback() {
     if (this._lazyRepeatProvider) {
       this._lazyRepeatProvider.destroy();
       this._lazyRepeatProvider = null;
@@ -183,6 +179,4 @@ class LazyRepeatElement extends BaseElement {
 
 }
 
-window.OnsLazyRepeatElement = document.registerElement('ons-lazy-repeat', {
-  prototype: LazyRepeatElement.prototype
-});
+customElements.define('ons-lazy-repeat', LazyRepeatElement);

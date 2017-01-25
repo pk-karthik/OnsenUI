@@ -14,9 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 */
-import util from 'ons/util';
+import util from '../../ons/util';
+import animit from '../../ons/animit';
+import BaseAnimator from '../../ons/base-animator';
 
-class PopoverAnimator {
+export class PopoverAnimator extends BaseAnimator {
 
   /**
    * @param {Object} options
@@ -24,12 +26,8 @@ class PopoverAnimator {
    * @param {Number} options.duration
    * @param {Number} options.delay
    */
-  constructor(options = {}) {
-    this.options = util.extend({
-      timing: 'cubic-bezier(.1, .7, .4, 1)',
-      duration: 0.2,
-      delay: 0
-    }, options);
+  constructor({timing = 'cubic-bezier(.1, .7, .4, 1)', delay = 0, duration = 0.2} = {}) {
+    super({ timing, delay, duration });
   }
 
   show(popover, callback) {
@@ -52,10 +50,10 @@ class PopoverAnimator {
     if (restore) {
       animation = animation.saveStyle();
     }
-    animation = animation.queue(from).wait(options.delay).queue({
+    animation = animation.queue(from).wait(this.delay).queue({
       css: to,
-      duration: options.duration,
-      timing: options.timing
+      duration: this.duration,
+      timing: this.timing
     });
     if (restore) {
       animation = animation.restoreStyle();
@@ -86,7 +84,7 @@ const fade = {
   }
 };
 
-class MDFadePopoverAnimator extends PopoverAnimator {
+export class MDFadePopoverAnimator extends PopoverAnimator {
   show(popover, callback) {
     this._animateAll(popover, {
       _mask: fade.in,
@@ -102,7 +100,7 @@ class MDFadePopoverAnimator extends PopoverAnimator {
   }
 }
 
-class IOSFadePopoverAnimator extends MDFadePopoverAnimator {
+export class IOSFadePopoverAnimator extends MDFadePopoverAnimator {
   show(popover, callback) {
     this._animateAll(popover, {
       _mask: fade.in,
@@ -121,5 +119,3 @@ class IOSFadePopoverAnimator extends MDFadePopoverAnimator {
     });
   }
 }
-
-export default {PopoverAnimator, IOSFadePopoverAnimator, MDFadePopoverAnimator};

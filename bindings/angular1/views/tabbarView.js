@@ -24,7 +24,7 @@ limitations under the License.
   module.value('TabbarFadeAnimator', ons._internal.TabbarFadeAnimator);
   module.value('TabbarSlideAnimator', ons._internal.TabbarSlideAnimator);
 
-  module.factory('TabbarView', function($onsen, $compile, $parse) {
+  module.factory('TabbarView', function($onsen) {
     var TabbarView = Class.extend({
 
       init: function(scope, element, attrs) {
@@ -50,17 +50,6 @@ limitations under the License.
           'getActiveTabIndex',
           'loadPage'
         ]);
-
-      },
-
-      _compileAndLink: function(pageElement, callback) {
-        var link = $compile(pageElement);
-        var pageScope = this._scope.$new();
-        link(pageScope);
-
-        pageScope.$evalAsync(function() {
-          callback(pageElement);
-        });
       },
 
       _destroy: function() {
@@ -75,7 +64,7 @@ limitations under the License.
     MicroEvent.mixin(TabbarView);
 
     TabbarView.registerAnimator = function(name, Animator) {
-      return window.OnsTabbarElement.registerAnimator(name, Animator);
+      return window.ons.TabbarElement.registerAnimator(name, Animator);
     };
 
     return TabbarView;

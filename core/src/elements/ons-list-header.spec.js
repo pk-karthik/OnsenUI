@@ -2,16 +2,19 @@
 
 describe('ons-list-header', () => {
   it('provides \'OnsHeaderListElement\' global variable', () => {
-    expect(window.OnsListHeaderElement).to.be.ok;
+    expect(window.ons.ListHeaderElement).to.be.ok;
   });
 
-  it('classList contains \'list__header\' by default', () => {
-    var element = new OnsListHeaderElement();
+  onlyChrome(it)('classList contains \'list__header\' by default', () => {
+    const element = new ons.ListHeaderElement();
     expect(element.classList.contains('list__header')).to.be.true;
+    element.setAttribute('class', 'foo');
+    expect(element.classList.contains('list__header')).to.be.true;
+    expect(element.classList.contains('foo')).to.be.true;
   });
 
-  it('provides modifier attribute', () => {
-    var element = new OnsListHeaderElement();
+  onlyChrome(it)('provides modifier attribute', () => {
+    const element = new ons.ListHeaderElement();
     element.setAttribute('modifier', 'hoge');
     expect(element.classList.contains('list__header--hoge')).to.be.true;
 

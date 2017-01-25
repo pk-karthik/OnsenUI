@@ -2,16 +2,19 @@
 
 describe('ons-bottom-toolbar', () => {
   it('provides \'OnsBottomToolbarElement\' global variable', () => {
-    expect(window.OnsBottomToolbarElement).to.be.ok;
+    expect(window.ons.BottomToolbarElement).to.be.ok;
   });
 
-  it('classList contains \'bottom-bar\' by default', () => {
-    var element = new OnsBottomToolbarElement();
+  onlyChrome(it)('classList contains \'bottom-bar\' by default', () => {
+    const element = new ons.BottomToolbarElement();
     expect(element.classList.contains('bottom-bar')).to.be.true;
+    element.setAttribute('class', 'foo');
+    expect(element.classList.contains('bottom-bar')).to.be.true;
+    expect(element.classList.contains('foo')).to.be.true;
   });
 
-  it('provides \'modifier\' attribute', () => {
-    var element = new OnsBottomToolbarElement();
+  onlyChrome(it)('provides \'modifier\' attribute', () => {
+    var element = new ons.BottomToolbarElement();
     element.setAttribute('modifier', 'hoge');
     expect(element.classList.contains('bottom-bar--hoge')).to.be.true;
 
@@ -26,14 +29,14 @@ describe('ons-bottom-toolbar', () => {
     expect(element.classList.contains('bottom-bar--fuga')).to.be.true;
   });
 
-  it('ensures it\'s location in the page', () => {
-    var element = new OnsBottomToolbarElement(),
-      page = new OnsPageElement();
+  onlyChrome(it)('ensures its page\'s class', () => {
+    var element = new ons.BottomToolbarElement(),
+      page = new ons.PageElement();
 
     document.body.appendChild(page);
     page.appendChild(element);
 
-    expect(element.parentNode).to.equal(page);
+    expect(page.classList.contains('page-with-bottom-toolbar')).to.be.true;
 
     document.body.removeChild(page);
   });

@@ -15,12 +15,13 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
-import contentReady from 'ons/content-ready';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+import contentReady from '../ons/content-ready';
 
+const defaultClassName = 'list__item';
 const scheme = {
   '.list__item': 'list__item--*',
   '.list__item__left': 'list__item--*__left',
@@ -74,7 +75,7 @@ const scheme = {
  * @seealso ons-list-header
  *   [en]ons-list-header component[/en]
  *   [ja]ons-list-headerコンポーネント[/ja]
- * @guide UsingList
+ * @guide lists
  *   [en]Using lists[/en]
  *   [ja]リストを使う[/ja]
  * @codepen yxcCt
@@ -93,7 +94,7 @@ const scheme = {
  *   </div>
  * </ons-list-item>
  */
-class ListItemElement extends BaseElement {
+export default class ListItemElement extends BaseElement {
 
   /**
    * @attribute modifier
@@ -127,15 +128,14 @@ class ListItemElement extends BaseElement {
    *   [ja][/ja]
    */
 
-  createdCallback() {
+  init() {
     contentReady(this, () => {
       this._compile();
     });
   }
 
   _compile() {
-    autoStyle.prepare(this);
-    this.classList.add('list__item');
+    this.classList.add(defaultClassName);
 
     let left, center, right;
 
@@ -180,19 +180,31 @@ class ListItemElement extends BaseElement {
     this._updateRipple();
 
     ModifierUtil.initModifier(this, scheme);
+
+    autoStyle.prepare(this);
+  }
+
+  static get observedAttributes() {
+    return ['modifier', 'class', 'ripple'];
   }
 
   attributeChangedCallback(name, last, current) {
     switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
       case 'modifier':
         ModifierUtil.onModifierChanged(last, current, this, scheme);
         break;
       case 'ripple':
         this._updateRipple();
+        break;
     }
   }
 
-  attachedCallback() {
+  connectedCallback() {
     this.addEventListener('drag', this._onDrag);
     this.addEventListener('touchstart', this._onTouch);
     this.addEventListener('mousedown', this._onTouch);
@@ -208,7 +220,7 @@ class ListItemElement extends BaseElement {
     this.tapped = false;
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
     this.removeEventListener('drag', this._onDrag);
     this.removeEventListener('touchstart', this._onTouch);
     this.removeEventListener('mousedown', this._onTouch);
@@ -281,6 +293,4 @@ class ListItemElement extends BaseElement {
   }
 }
 
-window.OnsListItemElement = document.registerElement('ons-list-item', {
-  prototype: ListItemElement.prototype
-});
+customElements.define('ons-list-item', ListItemElement);

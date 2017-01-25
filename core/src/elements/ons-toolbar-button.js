@@ -15,16 +15,18 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+
+const defaultClassName = 'toolbar-button';
 
 const scheme = {'': 'toolbar-button--*'};
 
 /**
  * @element ons-toolbar-button
- * @category toolbar
+ * @category page
  * @modifier material
  *   [en]Material Design toolbar button.[/en]
  *   [ja][/ja]
@@ -35,8 +37,8 @@ const scheme = {'': 'toolbar-button--*'};
  *   [en]Button component for ons-toolbar and ons-bottom-toolbar.[/en]
  *   [ja]ons-toolbarあるいはons-bottom-toolbarに設置できるボタン用コンポーネントです。[/ja]
  * @codepen aHmGL
- * @tutorial vanilla/Reference/button
- * @guide Addingatoolbar
+ * @tutorial vanilla/Reference/page
+ * @guide adding-a-toolbar
  *   [en]Adding a toolbar[/en]
  *   [ja]ツールバーの追加[/ja]
  * @seealso ons-toolbar
@@ -62,7 +64,7 @@ const scheme = {'': 'toolbar-button--*'};
  *   </div>
  * </ons-toolbar>
  */
-class ToolbarButtonElement extends BaseElement {
+export default class ToolbarButtonElement extends BaseElement {
 
   /**
    * @attribute modifier
@@ -79,10 +81,8 @@ class ToolbarButtonElement extends BaseElement {
    *   [ja]ボタンを無効化する場合は指定してください。[/ja]
    */
 
-  createdCallback() {
-    if (!this.hasAttribute('_compiled')) {
-      this._compile();
-    }
+  init() {
+    this._compile();
   }
 
   /**
@@ -103,21 +103,27 @@ class ToolbarButtonElement extends BaseElement {
   _compile() {
     autoStyle.prepare(this);
 
-    this.classList.add('toolbar-button');
+    this.classList.add(defaultClassName);
 
     ModifierUtil.initModifier(this, scheme);
+  }
 
-    this.setAttribute('_compiled', '');
+  static get observedAttributes() {
+    return ['modifier', 'class'];
   }
 
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
-      return ModifierUtil.onModifierChanged(last, current, this, scheme);
+    switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
+      case 'modifier':
+        ModifierUtil.onModifierChanged(last, current, this, scheme);
+        break;
     }
   }
 }
 
-window.OnsToolbarButton = document.registerElement('ons-toolbar-button', {
-  prototype: ToolbarButtonElement.prototype
-});
-
+customElements.define('ons-toolbar-button', ToolbarButtonElement);

@@ -6,7 +6,7 @@ describe('OnsTabbarElement', () => {
   beforeEach(done => {
     template = ons._util.createElement('<ons-template id="hoge">hogehoge</ons-template>');
     template2 = ons._util.createElement('<ons-template id="fuga">fugafuga</ons-template>');
-    element = new OnsTabbarElement();
+    element = new ons.TabbarElement();
     document.body.appendChild(template);
     document.body.appendChild(template2);
     ons._contentReady(element, done);
@@ -20,10 +20,10 @@ describe('OnsTabbarElement', () => {
   });
 
   it('should exist', () => {
-    expect(window.OnsTabbarElement).to.be.ok;
+    expect(window.ons.TabbarElement).to.be.ok;
   });
 
-  it('provides \'modifier\' attribute', () => {
+  onlyChrome(it)('provides \'modifier\' attribute', () => {
     document.body.appendChild(element);
     element.setAttribute('modifier', 'hoge');
 
@@ -47,7 +47,7 @@ describe('OnsTabbarElement', () => {
     expect(element.children[1].classList.contains('tab-bar--fuga')).to.be.true;
   });
 
-  it('has \'position\' attribute', function(done) {
+  onlyChrome(it)('has \'position\' attribute', function(done) {
     var div = document.createElement('div');
     document.body.appendChild(div);
     ons.platform.select('android');
@@ -100,7 +100,6 @@ describe('OnsTabbarElement', () => {
 
     expect(element.children[1].classList.contains('tab-bar')).to.be.true;
     expect(element.children[1].classList.contains('ons-tab-bar__footer')).to.be.true;
-    expect(element.children[1].classList.contains('ons-tabbar-inner')).to.be.true;
   });
 
   describe('#getTabbarId()', () => {
@@ -110,7 +109,7 @@ describe('OnsTabbarElement', () => {
   });
 
   describe('#setTabbarVisibility()', () => {
-    it('sets the element visible or invisible', () => {
+    onlyChrome(it)('sets the element visible or invisible', () => {
       var div = document.createElement('div');
       document.body.appendChild(div);
       div.innerHTML = `
@@ -149,20 +148,20 @@ describe('OnsTabbarElement', () => {
 
   describe('#_getCurrentPageElement()', () => {
     it('accepts only \'ons-page\' as current page element', () => {
-      const page = new OnsPageElement();
+      const page = new ons.PageElement();
       element._contentElement.appendChild(page);
       expect(element._getCurrentPageElement().classList.contains('page')).to.be.true;
       expect(element._getCurrentPageElement.bind(element)).not.to.throw('Invalid state: page element must be a "ons-page" element.');
 
       element._contentElement.removeChild(element._contentElement.querySelector('ons-page'));
-      const button = new OnsButtonElement();
+      const button = new ons.ButtonElement();
       element._contentElement.appendChild(button);
       expect(element._getCurrentPageElement.bind(element)).to.throw('Invalid state: page element must be a "ons-page" element.');
     });
   });
 
   describe('#getActiveTabIndex()', () => {
-    it('has active tab property', function(done) {
+    onlyChrome(it)('has active tab property', function(done) {
       const div = document.createElement('div');
       document.body.appendChild(div);
       div.innerHTML = `
@@ -211,7 +210,7 @@ describe('OnsTabbarElement', () => {
       template = element = null;
     });
 
-    it('fires \'prechange\' event', () => {
+    onlyChrome(it)('fires \'prechange\' event', () => {
       const promise = new Promise((resolve) => {
         element.addEventListener('prechange', resolve);
       });
@@ -219,7 +218,7 @@ describe('OnsTabbarElement', () => {
       return expect(promise).to.eventually.be.fulfilled;
     });
 
-    it('fires \'postchange\' event', () => {
+    onlyChrome(it)('fires \'postchange\' event', () => {
       const promise = new Promise((resolve) => {
         element.addEventListener('postchange', resolve);
       });
@@ -227,7 +226,7 @@ describe('OnsTabbarElement', () => {
       return expect(promise).to.eventually.be.fulfilled;
     });
 
-    it('fires \'reactive\' event', () => {
+    onlyChrome(it)('fires \'reactive\' event', () => {
       const promise = new Promise((resolve) => {
         element.addEventListener('reactive', resolve);
       });
@@ -258,7 +257,7 @@ describe('OnsTabbarElement', () => {
       template = element = null;
     });
 
-    it('fires \'init\' event', () => {
+    onlyChrome(it)('fires \'init\' event', () => {
       const promise = new Promise((resolve) => {
         element.addEventListener('init', resolve);
       });
@@ -266,7 +265,7 @@ describe('OnsTabbarElement', () => {
       return expect(promise).to.eventually.be.fulfilled;
     });
 
-    it('fires \'show\' event', () => {
+    onlyChrome(it)('fires \'show\' event', () => {
       const promise = new Promise((resolve) => {
         element.addEventListener('show', resolve);
       });
@@ -274,7 +273,7 @@ describe('OnsTabbarElement', () => {
       return expect(promise).to.eventually.be.fulfilled;
     });
 
-    it('fires \'hide\' event', () => {
+    onlyChrome(it)('fires \'hide\' event', () => {
       const promise = new Promise((resolve) => {
         element.addEventListener('hide', resolve);
       });
@@ -287,7 +286,7 @@ describe('OnsTabbarElement', () => {
   });
 
   describe('#loadPage()', () => {
-    it('loads a page', (done) => {
+    onlyChrome(it)('loads a page', (done) => {
       const element = ons._util.createElement(`
         <ons-tabbar>
           <ons-tab label="Hoge"></ons-tab>
@@ -305,7 +304,7 @@ describe('OnsTabbarElement', () => {
       });
     });
 
-    it('returns a promise that resolves to the new page', () => {
+    onlyChrome(it)('returns a promise that resolves to the new page', () => {
       expect(element.innerHTML.indexOf('fugafuga')).to.be.below(0);
       return expect(element.loadPage('fuga')).to.eventually.be.fulfilled.then(page => {
         expect(element.innerHTML.indexOf('fugafuga')).not.to.be.below(0);
@@ -315,29 +314,11 @@ describe('OnsTabbarElement', () => {
   });
 
   describe('#setActiveTab()', () => {
-    it('loads any tab as persistent', (done) => {
-      const element = ons._util.createElement(`
-        <ons-tabbar>
-          <ons-tab label="Hoge" page="hoge"></ons-tab>
-        </ons-tabbar>
-      `);
-      document.body.appendChild(element);
-
-      var spy = chai.spy.on(element, '_loadPersistentPageDOM');
-      element.setActiveTab(0);
-
-      setImmediate(() => {
-        expect(spy).to.have.been.called.once;
-        element.remove();
-        done();
-      });
-    });
-
     it('rejects the promise if index does not exist', () => {
       return expect(element.setActiveTab(0)).to.eventually.be.rejected;
     });
 
-    it('can be canceled', (done) => {
+    onlyChrome(it)('can be canceled', (done) => {
       const element = ons._util.createElement(`
         <ons-tabbar>
           <ons-tab label="Hoge" page="hoge"></ons-tab>
@@ -355,7 +336,7 @@ describe('OnsTabbarElement', () => {
       expect(element.setActiveTab(0)).to.be.false;
     });
 
-    it('does not remove tabs', (done) => {
+    onlyChrome(it)('does not remove tabs', (done) => {
       const element = ons._util.createElement(`
         <ons-tabbar>
           <ons-tab label="Hoge" page="hoge"></ons-tab>
@@ -374,25 +355,7 @@ describe('OnsTabbarElement', () => {
       });
     });
 
-    it('keeps the page when option \'keepPage\' is true', (done) => {
-      const element = ons._util.createElement(`
-        <ons-tabbar>
-          <ons-tab label="Hoge" page="hoge" active="true"></ons-tab>
-          <ons-tab label="fuga" page="fuga"></ons-tab>
-        </ons-tabbar>
-      `);
-
-      var spy = chai.spy.on(element, '_switchPage');
-
-      element.addEventListener('postchange', (event) => {
-        expect(spy).not.to.have.been.called();
-        done();
-      });
-
-      element.setActiveTab(1, {'keepPage': true});
-    });
-
-    it('returns a promise that resolves to the new page', () => {
+    onlyChrome(it)('returns a promise that resolves to the new page', () => {
       const element = ons._util.createElement(`
         <ons-tabbar>
           <ons-tab label="Hoge" page="hoge" active="true"></ons-tab>
@@ -409,20 +372,6 @@ describe('OnsTabbarElement', () => {
   });
 
   describe('#_compile()', () => {
-    [true, false].forEach(isTop => {
-      it('fills status bar - ' + isTop, (done) => {
-        const tmp = ons._internal.autoStatusBarFill;
-        ons._internal.autoStatusBarFill = action => action();
-        const element = ons._util.createElement(`<ons-tabbar position="${isTop ?  'top' : 'bottom'}"> </ons-tabbar>`);
-        ons._internal.autoStatusBarFill = tmp;
-
-        setTimeout(() => {
-          expect(element.hasAttribute('status-bar-fill')).to.equal(isTop);
-          done();
-        }, 200);
-      });
-    });
-
     it('does not compile twice', () => {
       const div1 = document.createElement('div');
       const div2 = document.createElement('div');
@@ -437,16 +386,33 @@ describe('OnsTabbarElement', () => {
     });
   });
 
+  describe('#_updatePosition()', () => {
+    [true, false].forEach(isTop => {
+      it('fills status bar - ' + isTop, (done) => {
+        const tmp = ons._internal.autoStatusBarFill;
+        ons._internal.autoStatusBarFill = action => action();
+        const element = ons._util.createElement(`<ons-tabbar position="${isTop ?  'top' : 'bottom'}"> </ons-tabbar>`);
+        element._updatePosition();
+        ons._internal.autoStatusBarFill = tmp;
+
+        setTimeout(() => {
+          expect(element.hasAttribute('status-bar-fill')).to.equal(isTop);
+          done();
+        }, 200);
+      });
+    });
+  });
+
   describe('#registerAnimator()', () => {
     it('throws an error if animator is not a TabbarAnimator', () => {
-      expect(() => window.OnsTabbarElement.registerAnimator('hoge', 'hoge')).to.throw(Error);
+      expect(() => window.ons.TabbarElement.registerAnimator('hoge', 'hoge')).to.throw(Error);
     });
 
     it('registers a new animator', () => {
-      class MyAnimator extends window.OnsTabbarElement.TabbarAnimator {
+      class MyAnimator extends window.ons.TabbarElement.TabbarAnimator {
       }
 
-      window.OnsTabbarElement.registerAnimator('hoge', MyAnimator);
+      window.ons.TabbarElement.registerAnimator('hoge', MyAnimator);
     });
   });
 

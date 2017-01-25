@@ -13,26 +13,16 @@
 (function() {
   'use strict';
 
-  var lastReady = window.OnsSplitterContentElement.rewritables.ready;
-  window.OnsSplitterContentElement.rewritables.ready = ons._waitDiretiveInit('ons-splitter-content', lastReady);
-
-  var lastLink = window.OnsSplitterContentElement.rewritables.link;
-  window.OnsSplitterContentElement.rewritables.link = function(element, target, options, callback) {
-    var view = angular.element(element).data('ons-splitter-content');
-    lastLink(element, target, options, function(target) {
-      view._link(target, callback);
-    });
-  };
+  var lastReady = window.ons.SplitterContentElement.rewritables.ready;
+  window.ons.SplitterContentElement.rewritables.ready = ons._waitDiretiveInit('ons-splitter-content', lastReady);
 
   angular.module('onsen').directive('onsSplitterContent', function($compile, SplitterContent, $onsen) {
     return {
       restrict: 'E',
 
       compile: function(element, attrs) {
-        CustomElements.upgrade(element[0]);
 
         return function(scope, element, attrs) {
-          CustomElements.upgrade(element[0]);
 
           var view = new SplitterContent(scope, element, attrs);
 
@@ -40,6 +30,8 @@
           $onsen.registerEventHandlers(view, 'destroy');
 
           element.data('ons-splitter-content', view);
+
+          element[0].pageLoader = $onsen.createPageLoader(view);
 
           scope.$on('$destroy', function() {
             view._events = undefined;

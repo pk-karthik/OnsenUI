@@ -15,13 +15,15 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
-import contentReady from 'ons/content-ready';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+import contentReady from '../ons/content-ready';
 
-var scheme = {
+const defaultClassName = 'back-button';
+
+const scheme = {
   '': 'back-button--*',
   '.back-button__icon': 'back-button--*__icon',
   '.back-button__label': 'back-button--*__label'
@@ -29,7 +31,7 @@ var scheme = {
 
 /**
  * @element ons-back-button
- * @category toolbar
+ * @category navigation
  * @description
  *   [en]
  *     Back button component for `<ons-toolbar>`. Put it in the left part of the `<ons-toolbar>`.
@@ -48,12 +50,6 @@ var scheme = {
  * @seealso ons-navigator
  *   [en]ons-navigator component[/en]
  *   [ja]ons-navigatorコンポーネント[/ja]
- * @guide Addingatoolbar
- *   [en]Adding a toolbar[/en]
- *   [ja]ツールバーの追加[/ja]
- * @guide Returningfromapage
- *   [en]Returning from a page[/en]
- *   [ja]一つ前のページに戻る[/ja]
  * @example
  * <ons-toolbar>
  *   <div class="left">
@@ -65,7 +61,7 @@ var scheme = {
  * </ons-toolbar>
  */
 
-class BackButtonElement extends BaseElement {
+export default class BackButtonElement extends BaseElement {
   /**
    * @attribute modifier
    * @type {String}
@@ -74,11 +70,9 @@ class BackButtonElement extends BaseElement {
    *  [ja]バックボタンの見た目を指定します。[/ja]
    */
 
-  createdCallback() {
+  init() {
     contentReady(this, () => {
-      if (!this.hasAttribute('_compiled')) {
-        this._compile();
-      }
+      this._compile();
     });
 
     this._options = {};
@@ -88,7 +82,7 @@ class BackButtonElement extends BaseElement {
   _compile() {
     autoStyle.prepare(this);
 
-    this.classList.add('back-button');
+    this.classList.add(defaultClassName);
 
     if (!util.findChild(this, '.back-button__label')) {
       const label = util.create('span.back-button__label');
@@ -96,7 +90,6 @@ class BackButtonElement extends BaseElement {
       while (this.childNodes[0]) {
         label.appendChild(this.childNodes[0]);
       }
-
       this.appendChild(label);
     }
 
@@ -107,8 +100,6 @@ class BackButtonElement extends BaseElement {
     }
 
     ModifierUtil.initModifier(this, scheme);
-
-    this.setAttribute('_compiled', '');
   }
 
   /**
@@ -179,17 +170,29 @@ class BackButtonElement extends BaseElement {
     }
   }
 
-  attachedCallback() {
+  connectedCallback() {
     this.addEventListener('click', this._boundOnClick, false);
   }
 
+  static get observedAttributes() {
+    return ['modifier', 'class'];
+  }
+
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
-      return ModifierUtil.onModifierChanged(last, current, this, scheme);
+    switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
+
+      case 'modifier':
+        ModifierUtil.onModifierChanged(last, current, this, scheme);
+        break;
     }
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
     this.removeEventListener('click', this._boundOnClick, false);
   }
 
@@ -202,6 +205,4 @@ class BackButtonElement extends BaseElement {
   }
 }
 
-window.OnsBackButtonElement = document.registerElement('ons-back-button', {
-  prototype: BackButtonElement.prototype
-});
+customElements.define('ons-back-button', BackButtonElement);

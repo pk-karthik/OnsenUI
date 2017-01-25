@@ -1,0 +1,82 @@
+import gulp from 'gulp';
+import shell from 'gulp-shell';
+import WebpackDevServer from 'webpack-dev-server';
+import childProcess from 'child_process';
+import open from 'open';
+import yargs from 'yargs';
+import StaticServer from 'static-server';
+
+const FLAGS = `--inline --colors --progress --display-error-details --display-cached`;
+
+gulp.task('serve', ['cp-dts'], done => {
+  createDevServer().listen('3030', '0.0.0.0', () => {
+    open('http://0.0.0.0:3030/bindings/angular2/examples/button.html');
+    done();
+  });
+});
+
+gulp.task('serve-umd-template', () => {
+  const server = new StaticServer({
+    rootPath: '.',
+    port: 8967
+  });
+  server.start(() => {
+    open(`http://0.0.0.0:${server.port}/umd-template/index.html`);
+  });
+});
+  
+gulp.task('test', ['e2e-test']);
+
+gulp.task('e2e-test', ['cp-dts'], done => {
+  const server = createDevServer({quiet: true});
+
+  server.listen(9090, '0.0.0.0', () => {
+    runProtractor().then(code => {
+      server.close();
+      server.listeningApp.close();
+      if (code !== 0) {
+        process.exit(code);
+      }
+      done();
+    });
+  });
+});
+
+gulp.task('cp-dts', () => {
+  const fs = require('fs');
+  const cp = require('cp');
+  const base = __dirname;
+
+  if (!fs.existsSync(base + '/dist')) {
+    fs.mkdirSync(base + '/dist');
+  }
+  cp.sync(base + '/../../core/src/onsenui.d.ts', base + '/dist/onsenui.d.ts');
+});
+
+function createDevServer(options = {}) {
+  const config = require('./webpack-dev.config.js');
+  const serverConfig = Object.assign(options, {
+    publicPath: config.output.publicPath,
+    stats: {colors: true}
+  }, config.devServer);
+  const server = new WebpackDevServer(require('webpack')(config), serverConfig);
+
+  return server;
+}
+
+function runProtractor() {
+  const args = ['protractor-conf.js'];
+
+  if (yargs.argv.specs) {
+    args.push('--specs');
+    args.push(yargs.argv.specs);
+  }
+
+  return new Promise(resolve => {
+      childProcess.spawn('./node_modules/.bin/protractor', args, {
+        stdio: 'inherit'
+      }).once('exit', code => {
+        resolve(code);
+      });
+  });
+}

@@ -25,6 +25,10 @@ describe('ons.notification', () => {
       expect(() => ons.notification.alert()).to.throw(Error);
     });
 
+    it('requires a message', () => {
+      expect(() => ons.notification.alert('test')).to.be.ok;
+    });
+
     it('accepts a \'messageHTML\' parameter', () => {
       const message = '<strong>hoge</strong>';
       ons.notification.alert({messageHTML: message, id: 'test'});
@@ -48,6 +52,12 @@ describe('ons.notification', () => {
       const spy = chai.spy.on(dialog, 'hide');
       button.dispatchEvent(event);
       expect(spy).to.have.been.called.once;
+    });
+
+    it('accepts a \'cancelable\' attribute', () => {
+      const event = new CustomEvent('dialog-cancel');
+      dialog.dispatchEvent(event);
+      expect(callback).to.have.been.called.with(-1);
     });
 
     it('resolves to the pressed button index', (done) => {
@@ -106,7 +116,7 @@ describe('ons.notification', () => {
     });
 
     it('accepts a \'cancelable\' attribute', () => {
-      const event = new CustomEvent('cancel');
+      const event = new CustomEvent('dialog-cancel');
       dialog.dispatchEvent(event);
       expect(callback).to.have.been.called.with(-1);
     });
@@ -149,6 +159,13 @@ describe('ons.notification', () => {
       dialog.remove();
     });
 
+    it('accepts a \'inputType\' parameter', () => {
+      ons.notification.prompt({message: 'test', id: 'test', inputType: 'password'});
+      const dialog = document.getElementById('test');
+      expect(dialog.querySelector('.text-input').type).to.equal('password');
+      dialog.remove();
+    });
+
     it('displays an alert dialog', () => {
       expect(dialog).to.be.ok;
       expect(dialog.innerHTML.indexOf('hoge')).to.be.above(-1);
@@ -178,7 +195,7 @@ describe('ons.notification', () => {
     });
 
     it('accepts a \'cancelable\' attribute', () => {
-      const event = new CustomEvent('cancel');
+      const event = new CustomEvent('dialog-cancel');
       dialog.dispatchEvent(event);
       expect(callback).to.have.been.called.with(null);
     });

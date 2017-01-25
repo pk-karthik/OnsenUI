@@ -15,16 +15,16 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import AnimatorFactory from 'ons/internal/animator-factory';
+import util from '../../ons/util';
+import autoStyle from '../../ons/autostyle';
+import ModifierUtil from '../../ons/internal/modifier-util';
+import AnimatorFactory from '../../ons/internal/animator-factory';
 import {DialogAnimator, IOSDialogAnimator, AndroidDialogAnimator, SlideDialogAnimator} from './animator';
-import platform from 'ons/platform';
-import BaseElement from 'ons/base-element';
-import DoorLock from 'ons/doorlock';
-import deviceBackButtonDispatcher from 'ons/device-back-button-dispatcher';
-import contentReady from 'ons/content-ready';
+import platform from '../../ons/platform';
+import BaseElement from '../../ons/base-element';
+import DoorLock from '../../ons/doorlock';
+import deviceBackButtonDispatcher from '../../ons/device-back-button-dispatcher';
+import contentReady from '../../ons/content-ready';
 
 const scheme = {
   '.dialog': 'dialog--*',
@@ -34,7 +34,6 @@ const scheme = {
 
 const _animatorDict = {
   'default': () => platform.isAndroid() ? AndroidDialogAnimator : IOSDialogAnimator,
-  'fade': () => platform.isAndroid() ? AndroidDialogAnimator : IOSDialogAnimator,
   'slide': SlideDialogAnimator,
   'none': DialogAnimator
 };
@@ -46,7 +45,7 @@ const _animatorDict = {
  *   [en]
  *     Dialog that is displayed on top of current screen. As opposed to the `<ons-alert-dialog>` element, this component can contain any kind of content.
  *
- *     To use the element it can either be attached directly to the `<body>` element or dynamically created from a template using the `<ons.createDialog(template)` utility function and the `<ons-template>` tag.
+ *     To use the element it can either be attached directly to the `<body>` element or dynamically created from a template using the `ons.createDialog(template)` utility function and the `<ons-template>` tag.
  *
  *     The dialog is useful for displaying menus, additional information or to ask the user to make a decision.
  *
@@ -58,15 +57,19 @@ const _animatorDict = {
  *   [ja]マテリアルデザインのダイアログを表示します。[/ja]
  * @codepen zxxaGa
  * @tutorial vanilla/Reference/dialog
- * @guide UsingDialog
- *   [en]Learn how to use the dialog component.[/en]
- *   [ja]ダイアログコンポーネントの使い方[/ja]
+ * @guide dialogs
+ *   [en]Dialog components[/en]
+ *   [ja]Dialog components[/ja]
+ * @guide using-modifier [en]More details about the `modifier` attribute[/en][ja]modifier属性の使い方[/ja]
  * @seealso ons-alert-dialog
  *   [en]`<ons-alert-dialog>` component[/en]
  *   [ja]ons-alert-dialogコンポーネント[/ja]
  * @seealso ons-popover
  *   [en]`<ons-popover>` component[/en]
  *   [ja]ons-popoverコンポーネント[/ja]
+ * @seealso ons-modal
+ *   [en]`<ons-modal>` component[/en]
+ *   [ja]ons-modalコンポーネント[/ja]
  * @example
  * <ons-dialog id="dialog">
  *   <p>This is a dialog!</p>
@@ -76,7 +79,7 @@ const _animatorDict = {
  *   document.getElementById('dialog').show();
  * </script>
  */
-class DialogElement extends BaseElement {
+export default class DialogElement extends BaseElement {
 
   /**
    * @event preshow
@@ -184,7 +187,7 @@ class DialogElement extends BaseElement {
     return util.findChild(this, '.dialog');
   }
 
-  createdCallback() {
+  init() {
     contentReady(this, () => this._compile());
 
     this._visible = false;
@@ -222,7 +225,7 @@ class DialogElement extends BaseElement {
       dialog.classList.add('dialog');
 
       const container = document.createElement('div');
-      dialog.classList.add('dialog-container');
+      container.classList.add('dialog-container');
 
       dialog.appendChild(container);
 
@@ -269,12 +272,14 @@ class DialogElement extends BaseElement {
   _cancel() {
     if (this.cancelable && !this._running) {
       this._running = true;
-      this.hide({
-        callback: () => {
-          this._running = false;
-          util.triggerElementEvent(this, 'cancel');
-        }
-      });
+      this.hide()
+        .then(
+          () => {
+            this._running = false;
+            util.triggerElementEvent(this, 'dialog-cancel');
+          },
+          () => this._running = false
+        );
     }
   }
 
@@ -285,8 +290,8 @@ class DialogElement extends BaseElement {
    *   [en]Parameter object.[/en]
    *   [ja]オプションを指定するオブジェクト。[/ja]
    * @param {String} [options.animation]
-   *   [en]Animation name. Available animations are `"none"`, `"fade"` and `"slide"`.[/en]
-   *   [ja]アニメーション名を指定します。"none", "fade", "slide"のいずれかを指定します。[/ja]
+   *   [en]Animation name. Available animations are `"none"` and `"slide"`.[/en]
+   *   [ja]アニメーション名を指定します。"none", "slide"のいずれかを指定します。[/ja]
    * @param {String} [options.animationOptions]
    *   [en]Specify the animation's duration, delay and timing. E.g. `{duration: 0.2, delay: 0.4, timing: 'ease-in'}`.[/en]
    *   [ja]アニメーション時のduration, delay, timingを指定します。e.g. `{duration: 0.2, delay: 0.4, timing: 'ease-in'}` [/ja]
@@ -352,8 +357,8 @@ class DialogElement extends BaseElement {
    *   [en]Parameter object.[/en]
    *   [ja]オプションを指定するオブジェクト。[/ja]
    * @param {String} [options.animation]
-   *   [en]Animation name. Available animations are `"none"`, `"fade"` and `"slide"`.[/en]
-   *   [ja]アニメーション名を指定します。"none", "fade", "slide"のいずれかを指定できます。[/ja]
+   *   [en]Animation name. Available animations are `"none"` and `"slide"`.[/en]
+   *   [ja]アニメーション名を指定します。"none", "slide"のいずれかを指定できます。[/ja]
    * @param {String} [options.animationOptions]
    *   [en]Specify the animation's duration, delay and timing. E.g. `{duration: 0.2, delay: 0.4, timing: 'ease-in'}`.[/en]
    *   [ja]アニメーション時のduration, delay, timingを指定します。e.g. `{duration: 0.2, delay: 0.4, timing: 'ease-in'}`[/ja]
@@ -454,7 +459,7 @@ class DialogElement extends BaseElement {
     return this.hasAttribute('cancelable');
   }
 
-  attachedCallback() {
+  connectedCallback() {
     this.onDeviceBackButton = e => this.cancelable ? this._cancel() : e.callParentHandler();
 
     contentReady(this, () => {
@@ -462,11 +467,15 @@ class DialogElement extends BaseElement {
     });
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
     this._backButtonHandler.destroy();
     this._backButtonHandler = null;
 
     this._mask.removeEventListener('click', this._boundCancel.bind(this), false);
+  }
+
+  static get observedAttributes() {
+    return ['modifier', 'animation'];
   }
 
   attributeChangedCallback(name, last, current) {
@@ -477,21 +486,25 @@ class DialogElement extends BaseElement {
       this._updateAnimatorFactory();
     }
   }
+
+  /**
+   * @param {String} name
+   * @param {DialogAnimator} Animator
+   */
+  static registerAnimator(name, Animator) {
+    if (!(Animator.prototype instanceof DialogAnimator)) {
+      throw new Error('"Animator" param must inherit OnsDialogElement.DialogAnimator');
+    }
+    _animatorDict[name] = Animator;
+  }
+
+  static get animators() {
+    return _animatorDict;
+  }
+
+  static get DialogAnimator() {
+    return DialogAnimator;
+  }
 }
 
-const OnsDialogElement = window.OnsDialogElement = document.registerElement('ons-dialog', {
-  prototype: DialogElement.prototype
-});
-
-/**
- * @param {String} name
- * @param {DialogAnimator} Animator
- */
-OnsDialogElement.registerAnimator = function(name, Animator) {
-  if (!(Animator.prototype instanceof DialogAnimator)) {
-    throw new Error('"Animator" param must inherit OnsDialogElement.DialogAnimator');
-  }
-  _animatorDict[name] = Animator;
-};
-
-OnsDialogElement.DialogAnimator = DialogAnimator;
+customElements.define('ons-dialog', DialogElement);

@@ -16,21 +16,16 @@ limitations under the License.
 */
 
 import NavigatorTransitionAnimator from './animator';
-import util from 'ons/util';
+import util from '../../ons/util';
+import animit from '../../ons/animit';
 
 /**
  * Lift screen transition.
  */
 export default class MDLiftNavigatorTransitionAnimator extends NavigatorTransitionAnimator {
 
-  constructor(options) {
-    options = util.extend({
-      duration: 0.4,
-      timing: 'cubic-bezier(.1, .7, .1, 1)',
-      delay: 0.05
-    }, options || {});
-
-    super(options);
+  constructor({timing = 'cubic-bezier(.1, .7, .1, 1)', delay = 0.05, duration = 0.4} = {}) {
+    super({ timing, delay, duration });
 
     this.backgroundMask = util.createElement(`
       <div style="position: absolute; width: 100%; height: 100%;
@@ -48,7 +43,7 @@ export default class MDLiftNavigatorTransitionAnimator extends NavigatorTransiti
     leavePage.parentNode.insertBefore(this.backgroundMask, leavePage);
 
     const maskClear = animit(this.backgroundMask)
-      .wait(0.6)
+      .wait(this.delay + this.duration)
       .queue(done => {
         this.backgroundMask.remove();
         done();
@@ -87,7 +82,6 @@ export default class MDLiftNavigatorTransitionAnimator extends NavigatorTransiti
           },
           duration: 0
         })
-        .wait(0)
         .queue({
           css: {
             opacity: 0.4
@@ -111,7 +105,7 @@ export default class MDLiftNavigatorTransitionAnimator extends NavigatorTransiti
     animit.runAll(
 
       animit(this.backgroundMask)
-        .wait(0.4)
+        .wait(this.delay + this.duration)
         .queue(done => {
           this.backgroundMask.remove();
           done();

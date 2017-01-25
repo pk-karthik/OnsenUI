@@ -23,13 +23,24 @@ describe('ons-splitter-content', () => {
   });
 
   it('provides \'OnsSplitterContentElement\' global variable', () => {
-    expect(window.OnsSplitterContentElement).to.be.ok;
+    expect(window.ons.SplitterContentElement).to.be.ok;
   });
 
   it('provides _hide(), _show(), _destroy() methods', () => {
     expect(content._hide instanceof Function).to.be.ok;
     expect(content._show instanceof Function).to.be.ok;
     expect(content._destroy instanceof Function).to.be.ok;
+  });
+
+  it('provide page property', () => {
+    content.page = 'hoge';
+    expect(content.page).to.be.equal('hoge');
+  });
+
+  it('provide pageLoader property', () => {
+    expect(content.pageLoader instanceof ons.PageLoader).to.be.ok;
+    content.pageLoader = new ons.PageLoader();
+    expect(content.pageLoader instanceof ons.PageLoader).to.be.ok;
   });
 
   describe('child elements', ()=> {
@@ -39,10 +50,10 @@ describe('ons-splitter-content', () => {
   });
 
   describe('#load()', () => {
-    it('returns a promise that resolves to the new page element', () => {
+    onlyChrome(it)('returns a promise that resolves to the new page element', () => {
       return expect(content.load('hoge.html')).to.eventually.be.fulfilled.then(
         page => {
-          expect(page).to.equal(content.firstChild);
+          expect(page).to.equal(content.children[0]);
           expect(content.getElementsByClassName('page__content')[0].innerHTML).to.equal('hoge content');
         }
       );

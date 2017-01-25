@@ -15,9 +15,10 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+import contentReady from '../ons/content-ready';
 
 const scheme = {
   '.progress-bar': 'progress-bar--*',
@@ -34,7 +35,7 @@ const template = util.createElement(`
 
 /**
  * @element ons-progress-bar
- * @category progress
+ * @category visual
  * @description
  *   [en]
  *     The component is used to display a linear progress bar. It can either display a progress bar that shows the user how much of a task has been completed. In the case where the percentage is not known it can be used to display an animated progress bar so the user can see that an operation is in progress.
@@ -55,7 +56,7 @@ const template = util.createElement(`
  *  indeterminate>
  * </ons-progress-bar>
  */
-class ProgressBarElement extends BaseElement {
+export default class ProgressBarElement extends BaseElement {
 
   /**
    * @attribute modifier
@@ -88,10 +89,48 @@ class ProgressBarElement extends BaseElement {
    *   [ja]この属性が設定された場合、ループするアニメーションが表示されます。[/ja]
    */
 
-  createdCallback() {
-    if (!this.hasAttribute('_compiled')) {
-      this._compile();
+  init() {
+    contentReady(this, () => this._compile());
+  }
+
+  _compile() {
+    if (!this._isCompiled()) {
+      this._template = template.cloneNode(true);
+    } else {
+      this._template = util.findChild(this, '.progress-bar');
     }
+
+    this._primary = util.findChild(this._template, '.progress-bar__primary');
+    this._secondary = util.findChild(this._template, '.progress-bar__secondary');
+
+    this._updateDeterminate();
+    this._updateValue();
+
+    this.appendChild(this._template);
+
+    ModifierUtil.initModifier(this, scheme);
+  }
+
+  _isCompiled() {
+    if (!util.findChild(this, '.progress-bar')) {
+      return false;
+    }
+
+    const barElement = util.findChild(this, '.progress-bar');
+
+    if (!util.findChild(barElement, '.progress-bar__secondary')) {
+      return false;
+    }
+
+    if (!util.findChild(barElement, '.progress-bar__primary')) {
+      return false;
+    }
+
+    return true;
+  }
+
+  static get observedAttributes() {
+    return ['modifier', 'value', 'secondary-value', 'indeterminate'];
   }
 
   attributeChangedCallback(name, last, current) {
@@ -106,18 +145,24 @@ class ProgressBarElement extends BaseElement {
 
   _updateDeterminate() {
     if (this.hasAttribute('indeterminate')) {
-      this._template.classList.add(`progress-bar--indeterminate`);
-      this._template.classList.remove(`progress-bar--determinate`);
+      contentReady(this, () => {
+        this._template.classList.add(`progress-bar--indeterminate`);
+        this._template.classList.remove(`progress-bar--determinate`);
+      });
     }
     else {
-      this._template.classList.add(`progress-bar--determinate`);
-      this._template.classList.remove(`progress-bar--indeterminate`);
+      contentReady(this, () => {
+        this._template.classList.add(`progress-bar--determinate`);
+        this._template.classList.remove(`progress-bar--indeterminate`);
+      });
     }
   }
 
   _updateValue() {
-    this._primary.style.width = (this.hasAttribute('value')) ? this.getAttribute('value') + '%' : '0%';
-    this._secondary.style.width = this.hasAttribute('secondary-value') ? this.getAttribute('secondary-value') + '%' : '0%';
+    contentReady(this, () => {
+      this._primary.style.width = (this.hasAttribute('value')) ? this.getAttribute('value') + '%' : '0%';
+      this._secondary.style.width = this.hasAttribute('secondary-value') ? this.getAttribute('secondary-value') + '%' : '0%';
+    });
   }
 
   /**
@@ -177,24 +222,6 @@ class ProgressBarElement extends BaseElement {
   get indeterminate() {
     return this.hasAttribute('indeterminate');
   }
-
-  _compile() {
-    this._template = template.cloneNode(true);
-
-    this._primary = this._template.childNodes[3];
-    this._secondary = this._template.childNodes[1];
-
-    this._updateDeterminate();
-    this._updateValue();
-
-    this.appendChild(this._template);
-
-    ModifierUtil.initModifier(this, scheme);
-
-    this.setAttribute('_compiled', '');
-  }
 }
 
-window.OnsProgressBarElement = document.registerElement('ons-progress-bar', {
-  prototype: ProgressBarElement.prototype
-});
+customElements.define('ons-progress-bar', ProgressBarElement);

@@ -15,17 +15,22 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import ModifierUtil from 'ons/internal/modifier-util';
-import AnimatorFactory from 'ons/internal/animator-factory';
+import util from '../../ons/util';
+import ModifierUtil from '../../ons/internal/modifier-util';
+import AnimatorFactory from '../../ons/internal/animator-factory';
 import SplitterAnimator from './animator';
-import BaseElement from 'ons/base-element';
-import deviceBackButtonDispatcher from 'ons/device-back-button-dispatcher';
-import contentReady from 'ons/content-ready';
+import BaseElement from '../../ons/base-element';
+import deviceBackButtonDispatcher from '../../ons/device-back-button-dispatcher';
+import contentReady from '../../ons/content-ready';
+
+const _animatorDict = {
+  default: SplitterAnimator,
+  overlay: SplitterAnimator
+};
 
 /**
  * @element ons-splitter
- * @category splitter
+ * @category menu
  * @description
  *  [en]
  *    A component that enables responsive layout by implementing both a two-column layout and a sliding menu layout.
@@ -35,15 +40,15 @@ import contentReady from 'ons/content-ready';
  *  [ja][/ja]
  * @codepen rOQOML
  * @tutorial vanilla/Reference/splitter
+ * @guide multiple-page-navigation
+ *  [en]Managing multiple pages.[/en]
+ *  [ja]Managing multiple pages[/ja]
  * @seealso ons-splitter-content
  *  [en]The `<ons-splitter-content>` component contains the main content of the page.[/en]
  *  [ja]ons-splitter-contentコンポーネント[/ja]
  * @seealso ons-splitter-side
  *  [en]The `<ons-splitter-side>` component contains the menu.[/en]
  *  [ja]ons-splitter-sideコンポーネント[/ja]
- * @guide CallingComponentAPIsfromJavaScript
- *   [en]Using components from JavaScript[/en]
- *   [ja]JavaScriptからコンポーネントを呼び出す[/ja]
  * @example
  * <ons-splitter id="splitter">
  *   <ons-splitter-content>
@@ -60,13 +65,12 @@ import contentReady from 'ons/content-ready';
  *   splitter.left.open();
  * </script>
  */
-class SplitterElement extends BaseElement {
+export default class SplitterElement extends BaseElement {
 
   _getSide(side) {
     const element = util.findChild(this, e => {
       return util.match(e, 'ons-splitter-side') && e.getAttribute('side') === side;
     });
-    element && CustomElements.upgrade(element);
     return element;
   }
 
@@ -145,11 +149,11 @@ class SplitterElement extends BaseElement {
 
   _layout() {
     this._sides.forEach(side => {
-      this.content.style[side._side] = side.mode === 'split' ? side._width : 0;
+      this.content.style[side.side] = side.mode === 'split' ? side._width : 0;
     });
   }
 
-  createdCallback() {
+  init() {
     this._boundOnModeChange = this._onModeChange.bind(this);
 
     contentReady(this, () => {
@@ -164,12 +168,12 @@ class SplitterElement extends BaseElement {
     }
   }
 
-  attachedCallback() {
+  connectedCallback() {
     this.onDeviceBackButton = this._onDeviceBackButton.bind(this);
     this.addEventListener('modechange', this._boundOnModeChange, false);
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
     this._backButtonHandler.destroy();
     this._backButtonHandler = null;
     this.removeEventListener('modechange', this._boundOnModeChange, false);
@@ -189,24 +193,21 @@ class SplitterElement extends BaseElement {
     util.propagateAction(this, '_destroy');
     this.remove();
   }
+
+  static registerAnimator(name, Animator) {
+    if (!(Animator instanceof SplitterAnimator)) {
+      throw new Error('Animator parameter must be an instance of SplitterAnimator.');
+    }
+    _animatorDict[name] = Animator;
+  }
+
+  static get SplitterAnimator() {
+    return SplitterAnimator;
+  }
+
+  static get animators() {
+    return _animatorDict;
+  }
 }
 
-window.OnsSplitterElement = document.registerElement('ons-splitter', {
-  prototype: SplitterElement.prototype
-});
-
-window.OnsSplitterElement._animatorDict = {
-  default: SplitterAnimator,
-  overlay: SplitterAnimator
-};
-
-window.OnsSplitterElement.registerAnimator = function(name, Animator) {
-  if (!(Animator instanceof SplitterAnimator)) {
-    throw new Error('Animator parameter must be an instance of SplitterAnimator.');
-  }
-  window.OnsSplitterElement._animatorDict[name] = Animator;
-};
-
-window.OnsSplitterElement.SplitterAnimator = SplitterAnimator;
-
-export default OnsSplitterElement;
+customElements.define('ons-splitter', SplitterElement);

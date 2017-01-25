@@ -15,11 +15,11 @@ limitations under the License.
 
 */
 
-import BaseElement from 'ons/base-element';
+import BaseElement from '../ons/base-element';
 
 /**
  * @element ons-template
- * @category template
+ * @category util
  * @description
  *   [en]
  *     Define a separate HTML fragment and use as a template.
@@ -27,7 +27,7 @@ import BaseElement from 'ons/base-element';
  *     These templates can be loaded as pages in `<ons-navigator>`, `<ons-tabbar>` and `<ons-splitter>`. They can also be used to generate dialogs.
  *   [/en]
  *   [ja]テンプレートとして使用するためのHTMLフラグメントを定義します。この要素でHTMLを宣言すると、id属性に指定した名前をpageのURLとしてons-navigatorなどのコンポーネントから参照できます。[/ja]
- * @guide DefiningMultiplePagesinSingleHTML
+ * @guide templates
  *   [en]Defining multiple pages in single html[/en]
  *   [ja]複数のページを1つのHTMLに記述する[/ja]
  * @seealso ons-navigator
@@ -49,7 +49,7 @@ import BaseElement from 'ons/base-element';
  * <ons-navigator page="foobar.html">
  * </ons-navigator>
  */
-class TemplateElement extends BaseElement {
+export default class TemplateElement extends BaseElement {
 
   /**
    * @property template
@@ -58,7 +58,8 @@ class TemplateElement extends BaseElement {
    *  [en]Template content. This property can not be used with AngularJS bindings.[/en]
    *  [ja][/ja]
    */
-  createdCallback() {
+
+  init() {
     this.template = this.innerHTML;
 
     while (this.firstChild) {
@@ -66,7 +67,7 @@ class TemplateElement extends BaseElement {
     }
   }
 
-  attachedCallback() {
+  connectedCallback() {
     var event = new CustomEvent('_templateloaded', {bubbles: true, cancelable: true});
     event.template = this.template;
     event.templateId = this.getAttribute('id');
@@ -75,6 +76,4 @@ class TemplateElement extends BaseElement {
   }
 }
 
-window.OnsTemplateElement = document.registerElement('ons-template', {
-  prototype: TemplateElement.prototype
-});
+customElements.define('ons-template', TemplateElement);

@@ -15,16 +15,18 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
+import util from '../ons/util';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
 
 const scheme = {'': 'button--*'};
 
+const defaultClassName = 'button';
+
 /**
  * @element ons-button
- * @category button
+ * @category form
  * @modifier outline
  *   [en]Button with outline and transparent background[/en]
  *   [ja]アウトラインを持ったボタンを表示します。[/ja]
@@ -62,14 +64,15 @@ const scheme = {'': 'button--*'};
  * @codepen hLayx
  * @tutorial vanilla/Reference/button
  * @guide Button [en]Guide for `<ons-button>`[/en][ja]<ons-button>の使い方[/ja]
- * @guide OverridingCSSstyles [en]More details about the `modifier` attribute[/en][ja]modifier属性の使い方[/ja]
+ * @guide using-modifier [en]More details about the `modifier` attribute[/en][ja]modifier属性の使い方[/ja]
+ * @guide cross-platform-styling [en]Information about cross platform styling[/en][ja]Information about cross platform styling[/ja]
  * @example
  * <ons-button modifier="large--cta">
  *   Tap Me
  * </ons-button>
  */
 
-class ButtonElement extends BaseElement {
+export default class ButtonElement extends BaseElement {
 
   /**
    * @attribute modifier
@@ -92,14 +95,22 @@ class ButtonElement extends BaseElement {
    *   [en]Specify if button should be disabled.[/en]
    *   [ja]ボタンを無効化する場合は指定します。[/ja]
    */
-  createdCallback() {
-    if (!this.hasAttribute('_compiled')) {
-      this._compile();
-    }
+
+  init() {
+    this._compile();
+  }
+
+  static get observedAttributes() {
+    return ['modifier', 'ripple', 'class'];
   }
 
   attributeChangedCallback(name, last, current) {
     switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
       case 'modifier':
         ModifierUtil.onModifierChanged(last, current, this, scheme);
         break;
@@ -126,13 +137,11 @@ class ButtonElement extends BaseElement {
   _compile() {
     autoStyle.prepare(this);
 
-    this.classList.add('button');
+    this.classList.add(defaultClassName);
 
     this._updateRipple();
 
     ModifierUtil.initModifier(this, scheme);
-
-    this.setAttribute('_compiled', '');
   }
 
   _updateRipple() {
@@ -140,6 +149,4 @@ class ButtonElement extends BaseElement {
   }
 }
 
-window.OnsButtonElement = document.registerElement('ons-button', {
-  prototype: ButtonElement.prototype
-});
+customElements.define('ons-button', ButtonElement);

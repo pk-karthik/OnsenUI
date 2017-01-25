@@ -19,19 +19,28 @@ describe('OnsModalElement', () => {
   });
 
   it('should exist', () => {
-    expect(window.OnsModalElement).to.be.ok;
+    expect(window.ons.ModalElement).to.be.ok;
   });
 
-  it('is not displayed by default', () => {
+  onlyChrome(it)('is not displayed by default', () => {
     expect(element.style.display).to.equal('none');
   });
 
+  onlyChrome(describe)('class attribute', () => {
+    it('should contains "modal" class name automatically', () => {
+      const element = new ons.ModalElement();
+      element.setAttribute('class', 'foobar');
+      expect(element.classList.contains('modal')).to.be.true;
+      expect(element.classList.contains('foobar')).to.be.true;
+    });
+  });
+
   describe('#_compile()', () => {
-    it('adds a class \'modal\' by default', () => {
+    onlyChrome(it)('adds a class \'modal\' by default', () => {
       expect(element.classList.contains('modal')).to.be.true;
     });
 
-    it('adds a \'modal__content\' by default', () => {
+    onlyChrome(it)('adds a \'modal__content\' by default', () => {
       const wrapper = document.createElement('div');
       element.appendChild(wrapper);
       expect(element.children[0].classList.contains('modal__content')).to.be.true;
@@ -47,7 +56,7 @@ describe('OnsModalElement', () => {
   });
 
   describe('#show()', () => {
-    it('displays the modal', () => {
+    onlyChrome(it)('displays the modal', () => {
       expect(element.style.display).to.equal('none');
       element.show();
       expect(element.style.display).to.equal('table');
@@ -87,7 +96,7 @@ describe('OnsModalElement', () => {
   });
 
   describe('#toggle()', () => {
-    it('alternates the modal displaying state', () => {
+    onlyChrome(it)('alternates the modal displaying state', () => {
       expect(element.style.display).to.equal('none');
       element.toggle();
       expect(element.style.display).to.equal('table');
@@ -99,7 +108,7 @@ describe('OnsModalElement', () => {
   });
 
   describe('#visible', () => {
-    it('returns whether the modal is shown', () => {
+    onlyChrome(it)('returns whether the modal is shown', () => {
       expect(element.style.display).to.equal('none');
       expect(element.visible).to.be.false;
       element.show();
@@ -110,36 +119,19 @@ describe('OnsModalElement', () => {
 
 
   describe('#onDeviceBackButton', () => {
-    it('gets the callback', () => {
+    onlyChrome(it)('gets the callback', () => {
       expect(element.onDeviceBackButton).to.be.ok;
     });
 
-    it('returns nothing by default', () => {
+    onlyChrome(it)('returns nothing by default', () => {
       expect(element.onDeviceBackButton._callback()).not.to.be.ok;
     });
 
-    it('overwrites the callback', () => {
+    onlyChrome(it)('overwrites the callback', () => {
       const spy = chai.spy.on(element._backButtonHandler, 'destroy');
       element.onDeviceBackButton = () => { return; };
       expect(spy).to.have.been.called.once;
       expect(element._backButtonHandler).to.be.ok;
-    });
-  });
-
-  describe('#_ensureNodePosition()', () => {
-    it('does not register extra element when has no parent ons-page', () => {
-      const spy = chai.spy.on(element, '_registerExtraElement');
-      expect(element._ensureNodePosition()).not.to.be.ok;
-      expect(spy).to.not.have.been.called();
-    });
-
-    it('registers extra element when has parent ons-page', () => {
-      const element = new OnsModalElement();
-      const parent = new OnsPageElement();
-      const spy = chai.spy.on(parent, '_registerExtraElement');
-      parent._registerExtraElement(element);
-      element._ensureNodePosition();
-      expect(spy).to.have.been.called.twice;
     });
   });
 
@@ -153,14 +145,14 @@ describe('OnsModalElement', () => {
 
   describe('#registerAnimator()', () => {
     it('throws an error if animator is not a ModalAnimator', () => {
-      expect(() => window.OnsModalElement.registerAnimator('hoge', 'hoge')).to.throw(Error);
+      expect(() => window.ons.ModalElement.registerAnimator('hoge', 'hoge')).to.throw(Error);
     });
 
     it('registers a new animator', () => {
-      class MyAnimator extends window.OnsModalElement.ModalAnimator {
+      class MyAnimator extends window.ons.ModalElement.ModalAnimator {
       }
 
-      window.OnsModalElement.registerAnimator('hoge', MyAnimator);
+      window.ons.ModalElement.registerAnimator('hoge', MyAnimator);
     });
   });
 });

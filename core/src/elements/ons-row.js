@@ -15,6 +15,8 @@ limitations under the License.
 
 */
 
+import BaseElement from '../ons/base-element';
+
 /**
  * @element ons-row
  * @category grid
@@ -22,7 +24,7 @@ limitations under the License.
  *   [en]Represents a row in the grid system. Use with `<ons-col>` to layout components.[/en]
  *   [ja]グリッドシステムにて行を定義します。ons-colとともに使用し、コンポーネントの配置に使用します。[/ja]
  * @codepen GgujC {wide}
- * @guide Layouting
+ * @guide layouting
  *   [en]Layouting guide[/en]
  *   [ja]レイアウト調整[/ja]
  * @seealso ons-col
@@ -45,4 +47,8 @@ limitations under the License.
  *   [en]Short hand attribute for aligning vertically. Valid values are top, bottom, and center.[/en]
  *   [ja]縦に整列するために指定します。top、bottom、centerのいずれかを指定できます。[/ja]
  */
-window.OnsRowElement = window.OnsRowElement ? window.OnsRowElement : document.registerElement('ons-row');
+
+export default class RowElement extends BaseElement {
+}
+
+customElements.define('ons-row', RowElement);

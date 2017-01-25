@@ -1,6 +1,6 @@
 'use strict';
 
-describe('OnsTabElement', () => {
+onlyChrome(describe)('OnsTabElement', () => {
   let element;
 
   beforeEach(done => {
@@ -14,7 +14,7 @@ describe('OnsTabElement', () => {
   });
 
   it('should exist', () => {
-    expect(window.OnsTabElement).to.be.ok;
+    expect(window.ons.TabElement).to.be.ok;
   });
 
   it('has a default template', () => {
@@ -22,8 +22,37 @@ describe('OnsTabElement', () => {
     expect(element._hasDefaultTemplate).to.be.true;
   });
 
+  it('has "page" property', () => {
+    element.page = 'foobar';
+    expect(element.page).to.be.equal('foobar');
+
+    element.page = {foo: 'bar'};
+    expect(element.page.foo).to.be.equal('bar');
+
+    element.setAttribute('page', 'hoge');
+    expect(element.getAttribute('page')).to.be.equal('hoge');
+  });
+
+  it('has "pageLoader" property', () => {
+    const pageLoader = new ons.PageLoader();
+    element.pageLoader = pageLoader;
+    expect(element.pageLoader).to.be.equal(pageLoader);
+    expect(() => {
+      element.pageLoader = 'foobar';
+    }).to.throw(Error);
+  });
+
+  describe('class attribute', () => {
+    it('should contain "tab-bar__item" class token automatically', () => {
+      expect(element.classList.contains('tab-bar__item')).to.be.true;
+      element.className = 'foo';
+      expect(element.classList.contains('tab-bar__item')).to.be.true;
+      expect(element.classList.contains('foo')).to.be.true;
+    });
+  });
+
   describe('modifier attribute', () => {
-    it('modifies the classList of the tab', () => {
+    onlyChrome(it)('modifies the classList of the tab', () => {
       const parent = ons._util.createElement(`
         <ons-tabbar>
         </ons-tabbar>
@@ -80,7 +109,7 @@ describe('OnsTabElement', () => {
   });
 
   describe('icon attribute', () => {
-    it('sets icon name for the tab', done => {
+    onlyChrome(it)('sets icon name for the tab', done => {
       const tabbar = ons._util.createElement(`
         <ons-tabbar>
         </ons-tabbar>
@@ -108,7 +137,7 @@ describe('OnsTabElement', () => {
   });
 
   describe('label attribute', () => {
-    it('sets label name for the tab', done => {
+    onlyChrome(it)('sets label name for the tab', done => {
       const tabbar = ons._util.createElement(`
         <ons-tabbar>
         </ons-tabbar>
@@ -133,6 +162,32 @@ describe('OnsTabElement', () => {
     });
   });
 
+  describe('badge attribute', () => {
+    onlyChrome(it)('sets badge for the tab', done => {
+      const tabbar = ons._util.createElement(`
+        <ons-tabbar>
+        </ons-tabbar>
+      `);
+
+      tabbar.appendChild(element);
+      document.body.appendChild(tabbar);
+      setImmediate(() => {
+        expect(document.getElementsByClassName('tab-bar__badge')[0]).not.to.be.ok;
+
+        element.setAttribute('badge', '99+');
+        expect(document.getElementsByClassName('tab-bar__badge')[0]).to.be.ok;
+        expect(document.getElementsByClassName('tab-bar__badge')[0].innerHTML).to.equal('99+');
+
+        element.setAttribute('badge', '98');
+        expect(document.getElementsByClassName('tab-bar__badge')[0].innerHTML).to.equal('98');
+        expect(document.getElementsByClassName('tab-bar__badge')[0].innerHTML).not.to.equal('99+');
+
+        document.body.removeChild(tabbar);
+        done();
+      });
+    });
+  });
+
   describe('children', () => {
     it('are, by default, two', () => {
       expect(element.children[0]).to.be.ok;
@@ -145,7 +200,6 @@ describe('OnsTabElement', () => {
 
       expect(element.children[1].nodeName).to.equal('BUTTON');
       expect(element.children[1].classList.contains('tab-bar__button')).to.be.true;
-      expect(element.children[1].classList.contains('tab-bar-inner')).to.be.true;
     });
   });
 
@@ -204,16 +258,16 @@ describe('OnsTabElement', () => {
       `);
 
       const myFunction = (value) => {
-        expect(value).to.equal(element._pageElement);
+        expect(value).to.equal(element._loadedPage);
         done();
       };
-      element._pageElement = true;
-      element._loadPageElement(myFunction);
+      element._loadedPage = true;
+      element._loadPageElement(document.createElement('div'), myFunction);
     });
   });
 
   describe('#setActive()', () => {
-    it('will set the tab as active', done => {
+    onlyChrome(it)('will set the tab as active', done => {
       const tabbar = ons._util.createElement(`
         <ons-tabbar>
           <ons-tab id="tab1" page="page1"></ons-tab><ons-tab id="tab2" page="page2"></ons-tab>

@@ -15,21 +15,24 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import internal from 'ons/internal';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import BaseElement from 'ons/base-element';
-import deviceBackButtonDispatcher from 'ons/device-back-button-dispatcher';
-import contentReady from 'ons/content-ready';
+import util from '../ons/util';
+import internal from '../ons/internal';
+import autoStyle from '../ons/autostyle';
+import ModifierUtil from '../ons/internal/modifier-util';
+import BaseElement from '../ons/base-element';
+import deviceBackButtonDispatcher from '../ons/device-back-button-dispatcher';
+import contentReady from '../ons/content-ready';
 
+import './ons-toolbar'; // ensures that 'ons-toolbar' element is registered
+
+const defaultClassName = 'page';
 const scheme = {
   '': 'page--*',
   '.page__content': 'page--*__content',
   '.page__background': 'page--*__background'
 };
 
-const nullToolbarElement = document.createElement('ons-toolbar');
+const nullToolbarElement = document.createElement('ons-toolbar'); // requires that 'ons-toolbar' element is registered
 
 /**
  * @element ons-page
@@ -45,21 +48,16 @@ const nullToolbarElement = document.createElement('ons-toolbar');
  *   [/en]
  *   [ja]ページ定義のためのコンポーネントです。このコンポーネントの内容はスクロールが許可されます。[/ja]
  * @tutorial vanilla/Reference/page
- * @guide ManagingMultiplePages
- *   [en]Managing multiple pages[/en]
- *   [ja]複数のページを管理する[/ja]
- * @guide Pagelifecycle
- *   [en]Page life cycle events[/en]
- *   [ja]ページライフサイクルイベント[/ja]
- * @guide HandlingBackButton
- *   [en]Handling back button[/en]
- *   [ja]バックボタンに対応する[/ja]
- * @guide OverridingCSSstyles
- *   [en]Overriding CSS styles[/en]
- *   [ja]CSSスタイルのオーバーライド[/ja]
- * @guide DefiningMultiplePagesinSingleHTML
+ * @guide creating-a-page
+ *   [en]Setting up a page in its `init` event[/en]
+ *   [ja]Setting up a page in its `init` event[/ja]
+ * @guide templates
  *   [en]Defining multiple pages in single html[/en]
  *   [ja]複数のページを1つのHTMLに記述する[/ja]
+ * @guide multiple-page-navigation
+ *   [en]Managing multiple pages[/en]
+ *   [ja]複数のページを管理する[/ja]
+ * @guide using-modifier [en]More details about the `modifier` attribute[/en][ja]modifier属性の使い方[/ja]
  * @seealso ons-toolbar
  *   [en]Use the `<ons-toolbar>` element to add a navigation bar to the top of the page.[/en]
  *   [ja][/ja]
@@ -80,12 +78,27 @@ const nullToolbarElement = document.createElement('ons-toolbar');
  *   <p>Page content</p>
  * </ons-page>
  *
- * // Infinite Scroll handler
- * page.onInfiniteScroll = function(done) {
- *   loadMore().then(done);
- * };
+ * @example
+ * <script>
+ *   myApp.handler = function(done) {
+ *     loadMore().then(done);
+ *   }
+ * </script>
+ *
+ * <ons-page on-infinite-scroll="myApp.handler">
+ *   <ons-toolbar>
+ *     <div class="center">List</div>
+ *   </ons-toolbar>
+ *
+ *   <ons-list>
+ *     <ons-list-item>#1</ons-list-item>
+ *     <ons-list-item>#2</ons-list-item>
+ *     <ons-list-item>#3</ons-list-item>
+ *     ...
+ *   </ons-list>
+ * </ons-page>
  */
-class PageElement extends BaseElement {
+export default class PageElement extends BaseElement {
 
   /**
    * @event init
@@ -135,23 +148,20 @@ class PageElement extends BaseElement {
    *   [ja][/ja]
    */
 
-  createdCallback() {
-    this.classList.add('page');
+  init() {
+    this.classList.add(defaultClassName);
 
     contentReady(this, () => {
-      if (!this.hasAttribute('_compiled')) {
-        this._compile();
-      }
+      this._compile();
 
       this._isShown = false;
       this._contentElement = this._getContentElement();
       this._isMuted = this.hasAttribute('_muted');
       this._skipInit = this.hasAttribute('_skipinit');
-      this.pushedOptions = {};
     });
   }
 
-  attachedCallback() {
+  connectedCallback() {
     contentReady(this, () => {
       if (!this._isMuted) {
         if (this._skipInit) {
@@ -184,7 +194,7 @@ class PageElement extends BaseElement {
   }
 
   get name() {
-   return this.getAttribute('name');
+    return this.getAttribute('name');
   }
 
   get backButton() {
@@ -220,7 +230,7 @@ class PageElement extends BaseElement {
     if (!this._onInfiniteScroll) {
       this._infiniteScrollLimit = 0.9;
       this._boundOnScroll = this._onScroll.bind(this);
-      this._contentElement.addEventListener('scroll', this._boundOnScroll);
+      setImmediate(() => this._contentElement.addEventListener('scroll', this._boundOnScroll));
     }
     this._onInfiniteScroll = value;
   }
@@ -308,74 +318,83 @@ class PageElement extends BaseElement {
     return util.findChild(this, 'ons-toolbar') || nullToolbarElement;
   }
 
-  /**
-   * Register toolbar element to this page.
-   *
-   * @param {HTMLElement} element
-   */
-  _registerToolbar(element) {
-    this.insertBefore(element, this.children[0]);
-  }
-
-  /**
-   * Register toolbar element to this page.
-   *
-   * @param {HTMLElement} element
-   */
-  _registerBottomToolbar(element) {
-    this.classList.add('page-with-bottom-toolbar');
-    this.appendChild(element);
+  static get observedAttributes() {
+    return ['modifier', '_muted', '_skipinit', 'on-infinite-scroll', 'class'];
   }
 
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
-      return ModifierUtil.onModifierChanged(last, current, this, scheme);
-    } else if (name === '_muted') {
-      this._isMuted = this.hasAttribute('_muted');
-    } else if (name === '_skipinit') {
-      this._skipInit = this.hasAttribute('_skipinit');
-    } else if (name === 'on-infinite-scroll') {
-      if (current === null) {
-        this.onInfiniteScroll = null;
-      } else {
-        this.onInfiniteScroll = (done) => {
-          const f = util.findFromPath(current);
-          this.onInfiniteScroll = f;
-          f(done);
-        };
-      }
+    switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
+      case 'modifier':
+        ModifierUtil.onModifierChanged(last, current, this, scheme);
+        break;
+      case '_muted':
+        this._isMuted = this.hasAttribute('_muted');
+        break;
+      case '_skipinit':
+        this._skipInit = this.hasAttribute('_skipinit');
+        break;
+      case 'on-infinite-scroll':
+        if (current === null) {
+          this.onInfiniteScroll = null;
+        } else {
+          this.onInfiniteScroll = (done) => {
+            const f = util.findFromPath(current);
+            this.onInfiniteScroll = f;
+            f(done);
+          };
+        }
+        break;
     }
   }
 
   _compile() {
     autoStyle.prepare(this);
 
-    if (!util.findChild(this, '.page__background') || !util.findChild(this, '.page__content')) {
+    if (util.findChild(this, '.content')) {
+      util.findChild(this, '.content').classList.add('page__content');
+    }
 
-      const background = util.create('.page__background');
+    if (util.findChild(this, '.background')) {
+      util.findChild(this, '.background').classList.add('page__background');
+    }
+
+    if (!util.findChild(this, '.page__content')) {
       const content = util.create('.page__content');
 
-      while (this.firstChild) {
-        content.appendChild(this.firstChild);
-      }
+      util.arrayFrom(this.childNodes).forEach(node => {
+        if (node.nodeType !== 1 || this._elementShouldBeMoved(node)) {
+          content.appendChild(node);
+        }
+      });
 
-      this.appendChild(background);
-      this.appendChild(content);
+      const prevNode = util.findChild(this, '.page__background') || util.findChild(this, 'ons-toolbar');
+
+      this.insertBefore(content, prevNode && prevNode.nextSibling);
+    }
+
+    if (!util.findChild(this, '.page__background')) {
+      const background = util.create('.page__background');
+      this.insertBefore(background, util.findChild(this, '.page__content'));
     }
 
     ModifierUtil.initModifier(this, scheme);
-
-    this.setAttribute('_compiled', '');
   }
 
-  _registerExtraElement(element) {
-    let extra = util.findChild(this, '.page__extra');
-    if (!extra) {
-      extra = util.create('.page__extra', {zIndex: 10001});
-      this.appendChild(extra);
+  _elementShouldBeMoved(el) {
+    if (el.classList.contains('page__background')) {
+      return false;
     }
-
-    extra.appendChild(element);
+    const tagName = el.tagName.toLowerCase();
+    if (tagName === 'ons-fab') {
+      return !el.hasAttribute('position');
+    }
+    const fixedElements = ['ons-toolbar', 'ons-bottom-toolbar', 'ons-modal', 'ons-speed-dial'];
+    return el.hasAttribute('inline') || fixedElements.indexOf(tagName) === -1;
   }
 
   _show() {
@@ -427,6 +446,4 @@ class PageElement extends BaseElement {
    */
 }
 
-window.OnsPageElement = document.registerElement('ons-page', {
-  prototype: PageElement.prototype
-});
+customElements.define('ons-page', PageElement);

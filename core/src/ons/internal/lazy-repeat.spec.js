@@ -24,19 +24,19 @@ describe('LazyRepeatDelegate', () => {
     });
   });
 
-  describe('#prepareItem()', () => {
+  describe('#loadItemElement()', () => {
     const done = () => 42;
 
     it('throws an error when there is no function to call', () => {
-      expect(() => delegate.prepareItem(0, done)).to.throw(Error);
+      expect(() => delegate.loadItemElement(0, document.createElement('div'), done)).to.throw(Error);
     });
 
     it('works when defined later', () => {
-      expect(() => delegate.prepareItem(0, done)).to.throw(Error);
+      expect(() => delegate.loadItemElement(0, document.createElement('div'), done)).to.throw(Error);
       userDelegate.createItemContent = () => document.createElement('div');
-      expect(() => delegate.prepareItem(0, done)).to.not.throw(Error);
+      expect(() => delegate.loadItemElement(0, document.createElement('div'), done)).to.not.throw(Error);
       userDelegate.createItemContent = null;
-      expect(() => delegate.prepareItem(0, done)).to.throw(Error);
+      expect(() => delegate.loadItemElement(0, document.createElement('div'), done)).to.throw(Error);
     });
   });
 
@@ -47,8 +47,8 @@ describe('LazyRepeatDelegate', () => {
   });
 
   describe('#calculateItemHeight()', () => {
-    it('throws an error', () => {
-      expect(() => delegate.calculateItemHeight()).to.throw(Error);
+    it('should return zero on undefined userDelegate.calculateItemHeight()', () => {
+      expect(delegate.calculateItemHeight()).to.equal(0);
     });
   });
 
@@ -71,7 +71,7 @@ describe('LazyRepeatDelegate', () => {
   });
 });
 
-describe('LazyRepeatProvider', () => {
+onlyChrome(describe)('LazyRepeatProvider', () => {
   let delegate, template, page, wrapper, provider;
 
   beforeEach(() => {
@@ -160,7 +160,8 @@ describe('LazyRepeatProvider', () => {
 
       const pageContent = page.querySelector('.page__content');
       pageContent.scrollTop = 10000;
-
+      provider._render();
+      pageContent.scrollTop = 10000;
       provider._render();
       expect(provider._renderedItems.hasOwnProperty(0)).to.be.false;
     });
@@ -173,8 +174,8 @@ describe('LazyRepeatProvider', () => {
       expect(spy).to.have.been.called.once;
     });
 
-    it('calls \'prepareItem()\' if it is not already rendered', () => {
-      const spy = chai.spy.on(delegate, 'prepareItem');
+    it('calls \'loadItemElement()\' if it is not already rendered', () => {
+      const spy = chai.spy.on(delegate, 'loadItemElement');
       provider._renderElement({index: 1000, top: 0});
       expect(spy).to.have.been.called.once;
     });

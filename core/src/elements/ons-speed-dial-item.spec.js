@@ -4,7 +4,7 @@ describe('OnsSpeedDialItemElement', () => {
   let item;
 
   beforeEach(() => {
-    item = new OnsSpeedDialItemElement();
+    item = new ons.SpeedDialItemElement();
     document.body.appendChild(item);
   });
 
@@ -13,10 +13,10 @@ describe('OnsSpeedDialItemElement', () => {
   });
 
   it('exists', () => {
-    expect(window.OnsSpeedDialItemElement).to.be.ok;
+    expect(window.ons.SpeedDialItemElement).to.be.ok;
   });
 
-  it('provides modifier attribute', () => {
+  onlyChrome(it)('provides modifier attribute', () => {
     item.setAttribute('modifier', 'hoge');
     expect(item.classList.contains('speed-dial__item--hoge')).to.be.true;
 
@@ -29,6 +29,20 @@ describe('OnsSpeedDialItemElement', () => {
     item.setAttribute('modifier', 'fuga');
     expect(item.classList.contains('speed-dial__item--piyo')).to.be.true;
     expect(item.classList.contains('speed-dial__item--fuga')).to.be.true;
+  });
+
+  onlyChrome(describe)('"class" attribute', () => {
+    it('should contain default class names automatically', () => {
+      const element = new ons.SpeedDialItemElement();
+      expect(element.classList.contains('speed-dial__item')).to.be.true;
+      expect(element.classList.contains('fab')).to.be.true;
+      expect(element.classList.contains('fab--mini')).to.be.true;
+      element.setAttribute('class', 'foo');
+      expect(element.classList.contains('speed-dial__item')).to.be.true;
+      expect(element.classList.contains('fab')).to.be.true;
+      expect(element.classList.contains('fab--mini')).to.be.true;
+      expect(element.classList.contains('foo')).to.be.true;
+    });
   });
 
   describe('#_onClick()', () => {

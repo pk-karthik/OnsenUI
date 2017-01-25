@@ -15,17 +15,26 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import BaseElement from 'ons/base-element';
-import GestureDetector from 'ons/gesture-detector';
+import util from '../ons/util';
+import platform from '../ons/platform';
+import BaseElement from '../ons/base-element';
+import GestureDetector from '../ons/gesture-detector';
+import animit from '../ons/animit';
 
 const STATE_INITIAL = 'initial';
 const STATE_PREACTION = 'preaction';
 const STATE_ACTION = 'action';
 
+const removeTransform = (el) => {
+  el.style.transform = '';
+  el.style.WebkitTransform = '';
+  el.style.transition = '';
+  el.style.WebkitTransition = '';
+};
+
 /**
  * @element ons-pull-hook
- * @category pull-hook
+ * @category control
  * @description
  *   [en]
  *     Component that adds **Pull to refresh** functionality to an `<ons-page>` element.
@@ -35,9 +44,6 @@ const STATE_ACTION = 'action';
  *   [ja][/ja]
  * @codepen WbJogM
  * @tutorial vanilla/Reference/pull-hook
- * @guide UsingPullHook
- *   [en]How to use Pull Hook[/en]
- *   [ja]プルフックを使う[/ja]
  * @example
  * <ons-page>
  *   <ons-pull-hook>
@@ -51,7 +57,7 @@ const STATE_ACTION = 'action';
  *   };
  * </script>
  */
-class PullHookElement extends BaseElement {
+export default class PullHookElement extends BaseElement {
 
   /**
    * @event changestate
@@ -99,50 +105,22 @@ class PullHookElement extends BaseElement {
    *   [ja]この属性がある時、プルフックが引き出されている時にもコンテンツは動きません。[/ja]
    */
 
-  createdCallback() {
+  init() {
     this._boundOnDrag = this._onDrag.bind(this);
     this._boundOnDragStart = this._onDragStart.bind(this);
     this._boundOnDragEnd = this._onDragEnd.bind(this);
     this._boundOnScroll = this._onScroll.bind(this);
 
-    this._currentTranslation = 0;
-
-    this._ensureScrollElement();
-
     this._setState(STATE_INITIAL, true);
-    this._setStyle();
-  }
-
-  _createScrollElement() {
-    if (this.parentElement.classList.contains('scroll')) {
-      return this.parentElement;
-    }
-
-    const scrollElement = util.createElement('<div class="scroll"><div>');
-
-    const pageElement = this.parentElement;
-
-    scrollElement.appendChild(this);
-    while (pageElement.firstChild) {
-      scrollElement.appendChild(pageElement.firstChild);
-    }
-    pageElement.appendChild(scrollElement);
-
-    return scrollElement;
-  }
-
-  _ensureScrollElement() {
-    if (!this._scrollElement) {
-      this._scrollElement = this._createScrollElement();
-    }
   }
 
   _setStyle() {
     const height = this.height;
 
-    this.style.top = '-' + height + 'px';
-    this.style.height = height + 'px';
-    this.style.lineHeight = height + 'px';
+    this.style.height = `${height}px`;
+    this.style.lineHeight = `${height}px`;
+    this.style.marginTop = '-1px';
+    this._pageElement.style.marginTop = `-${height}px`;
   }
 
   _onScroll(event) {
@@ -154,7 +132,7 @@ class PullHookElement extends BaseElement {
   }
 
   _generateTranslationTransform(scroll) {
-    return 'translate3d(0px, ' + scroll + 'px, 0px)';
+    return `translate3d(0px, ${scroll}px, 0px)`;
   }
 
   _onDrag(event) {
@@ -162,18 +140,15 @@ class PullHookElement extends BaseElement {
       return;
     }
 
-    // Ignore when dragging left and right.
-    if (event.gesture.direction === 'left' || event.gesture.direction === 'right') {
-      return;
-    }
-
     // Hack to make it work on Android 4.4 WebView. Scrolls manually near the top of the page so
     // there will be no inertial scroll when scrolling down. Allowing default scrolling will
     // kill all 'touchmove' events.
-    const element = this._pageElement;
-    element.scrollTop = this._startScroll - event.gesture.deltaY;
-    if (element.scrollTop < window.innerHeight && event.gesture.direction !== 'up') {
-      event.gesture.preventDefault();
+    if (platform.isAndroid()) {
+      const element = this._pageElement;
+      element.scrollTop = this._startScroll - event.gesture.deltaY;
+      if (element.scrollTop < window.innerHeight && event.gesture.direction !== 'up') {
+        event.gesture.preventDefault();
+      }
     }
 
     if (this._currentTranslation === 0 && this._getCurrentScroll() === 0) {
@@ -199,7 +174,12 @@ class PullHookElement extends BaseElement {
       this._setState(STATE_INITIAL);
     }
 
-    event.stopPropagation();
+    // By stopping propagation only of `dragup` and `dragdown`,
+    // allowing ancestor elements to detect `dragleft` and `dragright`.
+    // If we comment out the following `if` block, `ons-splitter` with `ons-pull-hook` will be broken.
+    if (event.gesture.direction === 'up' || event.gesture.direction === 'down') {
+        event.stopPropagation();
+    }
     this._translateTo(scroll);
   }
 
@@ -357,7 +337,7 @@ class PullHookElement extends BaseElement {
     if (this._isContentFixed()) {
       return this;
     } else {
-      return this._scrollElement;
+      return this._pageElement;
     }
   }
 
@@ -373,7 +353,8 @@ class PullHookElement extends BaseElement {
 
     const done = () => {
       if (scroll === 0) {
-        this._getScrollableElement().removeAttribute('style');
+        const el = this._getScrollableElement();
+        removeTransform(el);
       }
 
       if (options.callback) {
@@ -401,30 +382,35 @@ class PullHookElement extends BaseElement {
     }
   }
 
-  _getMinimumScroll() {
-    const scrollHeight = this._scrollElement.getBoundingClientRect().height;
-    const pageHeight = this._pageElement.getBoundingClientRect().height;
-
-    return scrollHeight > pageHeight ? -(scrollHeight - pageHeight) : 0;
+  _disableDragLock() { // e2e tests need it
+    this._dragLockDisabled = true;
+    this._destroyEventListeners();
+    this._createEventListeners();
   }
 
   _createEventListeners() {
     this._gestureDetector = new GestureDetector(this._pageElement, {
       dragMinDistance: 1,
-      dragDistanceCorrection: false
+      dragDistanceCorrection: false,
+      dragLockToAxis: !this._dragLockDisabled
     });
 
     // Bind listeners
-    this._gestureDetector.on('drag', this._boundOnDrag);
+    //
+    // Note:
+    // If we swipe up/down a screen too fast,
+    // the gesture detector occasionally dispatches a `dragleft` or `dragright`,
+    // so we need to have the pull hook listen to `dragleft` and `dragright` as well as `dragup` and `dragdown`.
+    this._gestureDetector.on('dragup dragdown dragleft dragright', this._boundOnDrag);
     this._gestureDetector.on('dragstart', this._boundOnDragStart);
     this._gestureDetector.on('dragend', this._boundOnDragEnd);
 
-    this._scrollElement.parentElement.addEventListener('scroll', this._boundOnScroll, false);
+    this._pageElement.addEventListener('scroll', this._boundOnScroll, false);
   }
 
   _destroyEventListeners() {
     if (this._gestureDetector) {
-      this._gestureDetector.off('drag', this._boundOnDrag);
+      this._gestureDetector.off('dragup dragdown dragleft dragright', this._boundOnDrag);
       this._gestureDetector.off('dragstart', this._boundOnDragStart);
       this._gestureDetector.off('dragend', this._boundOnDragEnd);
 
@@ -432,35 +418,44 @@ class PullHookElement extends BaseElement {
       this._gestureDetector = null;
     }
 
-    if (this._scrollElement && this._scrollElement.parentElement) {
-      this._scrollElement.parentElement.removeEventListener('scroll', this._boundOnScroll, false);
-    }
+    this._pageElement.removeEventListener('scroll', this._boundOnScroll, false);
   }
 
-  attachedCallback() {
-    this._ensureScrollElement();
-
-    this._pageElement = this._scrollElement.parentElement;
-
-    if (!this._pageElement.classList.contains('page__content')) {
-      throw new Error('<ons-pull-hook> must be a direct descendant of an <ons-page> element.');
-    }
+  connectedCallback() {
+    this._currentTranslation = 0;
+    this._pageElement = this.parentNode;
 
     this._createEventListeners();
+    this._setStyle();
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
+    this._pageElement.style.marginTop = '';
+
     this._destroyEventListeners();
   }
 
+  static get observedAttributes() {
+    return ['height'];
+  }
+
   attributeChangedCallback(name, last, current) {
+    if (name === 'height') {
+      this._setStyle();
+    }
+  }
+
+  static get STATE_INITIAL() {
+    return STATE_INITIAL;
+  }
+
+  static get STATE_PREACTION() {
+    return STATE_PREACTION;
+  }
+
+  static get STATE_ACTION() {
+    return STATE_ACTION;
   }
 }
 
-window.OnsPullHookElement = document.registerElement('ons-pull-hook', {
-  prototype: PullHookElement.prototype
-});
-
-window.OnsPullHookElement.STATE_ACTION = STATE_ACTION;
-window.OnsPullHookElement.STATE_INITIAL = STATE_INITIAL;
-window.OnsPullHookElement.STATE_PREACTION = STATE_PREACTION;
+customElements.define('ons-pull-hook', PullHookElement);

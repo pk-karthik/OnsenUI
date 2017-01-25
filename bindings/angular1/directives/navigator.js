@@ -152,16 +152,8 @@
 (function() {
   'use strict';
 
-  var lastReady = window.OnsNavigatorElement.rewritables.ready;
-  window.OnsNavigatorElement.rewritables.ready = ons._waitDiretiveInit('ons-navigator', lastReady);
-
-  var lastLink = window.OnsNavigatorElement.rewritables.link;
-  window.OnsNavigatorElement.rewritables.link = function(navigatorElement, target, options, callback) {
-    var view = angular.element(navigatorElement).data('ons-navigator');
-    view._compileAndLink(target, function(target) {
-      lastLink(navigatorElement, target, options, callback);
-    });
-  };
+  var lastReady = window.ons.NavigatorElement.rewritables.ready;
+  window.ons.NavigatorElement.rewritables.ready = ons._waitDiretiveInit('ons-navigator', lastReady);
 
   angular.module('onsen').directive('onsNavigator', function(NavigatorView, $onsen) {
     return {
@@ -173,22 +165,22 @@
       scope: true,
 
       compile: function(element) {
-        CustomElements.upgrade(element[0]);
 
         return {
           pre: function(scope, element, attrs, controller) {
-            CustomElements.upgrade(element[0]);
-            var navigator = new NavigatorView(scope, element, attrs);
+            var view = new NavigatorView(scope, element, attrs);
 
-            $onsen.declareVarAttribute(attrs, navigator);
-            $onsen.registerEventHandlers(navigator, 'prepush prepop postpush postpop init show hide destroy');
+            $onsen.declareVarAttribute(attrs, view);
+            $onsen.registerEventHandlers(view, 'prepush prepop postpush postpop init show hide destroy');
 
-            element.data('ons-navigator', navigator);
+            element.data('ons-navigator', view);
+
+            element[0].pageLoader = $onsen.createPageLoader(view);
 
             scope.$on('$destroy', function() {
-              navigator._events = undefined;
+              view._events = undefined;
               element.data('ons-navigator', undefined);
-              element = null;
+              scope = element = null;
             });
 
           },

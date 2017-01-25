@@ -15,16 +15,16 @@ limitations under the License.
 
 */
 
-import util from 'ons/util';
-import autoStyle from 'ons/autostyle';
-import ModifierUtil from 'ons/internal/modifier-util';
-import AnimatorFactory from 'ons/internal/animator-factory';
-import animators from './animator';
-import platform from 'ons/platform';
-import BaseElement from 'ons/base-element';
-import deviceBackButtonDispatcher from 'ons/device-back-button-dispatcher';
-import DoorLock from 'ons/doorlock';
-import contentReady from 'ons/content-ready';
+import util from '../../ons/util';
+import autoStyle from '../../ons/autostyle';
+import ModifierUtil from '../../ons/internal/modifier-util';
+import AnimatorFactory from '../../ons/internal/animator-factory';
+import {PopoverAnimator, IOSFadePopoverAnimator, MDFadePopoverAnimator} from './animator';
+import platform from '../../ons/platform';
+import BaseElement from '../../ons/base-element';
+import deviceBackButtonDispatcher from '../../ons/device-back-button-dispatcher';
+import DoorLock from '../../ons/doorlock';
+import contentReady from '../../ons/content-ready';
 
 const scheme = {
   '.popover': 'popover--*',
@@ -34,11 +34,13 @@ const scheme = {
   '.popover__arrow': 'popover__arrow--*'
 };
 
+const defaultClassName = 'popover';
+
 const _animatorDict = {
-  'default': () => platform.isAndroid() ? animators.MDFadePopoverAnimator : animators.IOSFadePopoverAnimator,
-  'none': animators.PopoverAnimator,
-  'fade-ios': animators.IOSFadePopoverAnimator,
-  'fade-md': animators.MDFadePopoverAnimator
+  'default': () => platform.isAndroid() ? MDFadePopoverAnimator : IOSFadePopoverAnimator,
+  'none': PopoverAnimator,
+  'fade-ios': IOSFadePopoverAnimator,
+  'fade-md': MDFadePopoverAnimator
 };
 
 const templateSource = util.createFragment(`
@@ -59,16 +61,22 @@ const positions = {
 const directions = Object.keys(positions);
 /**
  * @element ons-popover
- * @category popover
+ * @category dialog
  * @description
  *  [en]
  *    A component that displays a popover next to an element. The popover can be used to display extra information about a component or a tooltip.
  *
- *    Another common way to use the popover is to display a menu when a button on the screen is tapped.
+ *    To use the element it can either be attached directly to the `<body>` element or dynamically created from a template using the `ons.createPopover(template)` utility function and the `<ons-template>` tag.
+ *
+ *    Another common way to use the popover is to display a menu when a button on the screen is tapped. For Material Design, popover looks exactly as a dropdown menu.
  *  [/en]
  *  [ja]ある要素を対象とするポップオーバーを表示するコンポーネントです。[/ja]
  * @codepen ZYYRKo
  * @tutorial vanilla/Reference/popover
+ * @guide dialogs
+ *  [en]Dialog components[/en]
+ *  [ja]Dialog components[/ja]
+ * @guide using-modifier [en]More details about the `modifier` attribute[/en][ja]modifier属性の使い方[/ja]
  * @example
  * <ons-button onclick="showPopover(this)">
  *   Click me!
@@ -85,7 +93,7 @@ const directions = Object.keys(positions);
  *   };
  * </script>
  */
-class PopoverElement extends BaseElement {
+export default class PopoverElement extends BaseElement {
 
   /**
    * @event preshow
@@ -214,7 +222,7 @@ class PopoverElement extends BaseElement {
     return util.findChild(this._popover, '.popover__arrow');
   }
 
-  createdCallback() {
+  init() {
     contentReady(this, () => {
       this._compile();
       this._initAnimatorFactory();
@@ -228,7 +236,7 @@ class PopoverElement extends BaseElement {
   _initAnimatorFactory() {
     const factory = new AnimatorFactory({
       animators: _animatorDict,
-      baseClass: animators.PopoverAnimator,
+      baseClass: PopoverAnimator,
       baseClassName: 'PopoverAnimator',
       defaultAnimation: this.getAttribute('animation') || 'default'
     });
@@ -317,7 +325,7 @@ class PopoverElement extends BaseElement {
       return;
     }
 
-    this.classList.add('popover');
+    this.classList.add(defaultClassName);
 
     const hasDefaultContainer = this._popover && this._content;
 
@@ -439,6 +447,11 @@ class PopoverElement extends BaseElement {
     } else if (target instanceof Event) {
       target = target.target;
     }
+
+    if (typeof target === 'undefined') {
+      throw new Error('A target argument must be defined for the popover.');
+    }
+
     if (!(target instanceof HTMLElement)) {
      throw new Error('Invalid target');
     }
@@ -539,47 +552,58 @@ class PopoverElement extends BaseElement {
     this.onDeviceBackButton = e => this.cancelable ? this._cancel() : e.callParentHandler();
   }
 
-  attachedCallback() {
+  connectedCallback() {
     this._resetBackButtonHandler();
 
     contentReady(this, () => {
       this._margin = this._margin || parseInt(window.getComputedStyle(this).getPropertyValue('top'));
-      this._radius = parseInt(window.getComputedStyle(this._content).getPropertyValue('border-radius'));
+
+      // Fix for iframes
+      if (!this._margin) {
+        this._margin = 6;
+      }
+
+      this._radius = parseInt(window.getComputedStyle(this._content).getPropertyValue('border-top-left-radius'));
 
       this._mask.addEventListener('click', this._boundCancel, false);
 
       this._resetBackButtonHandler();
 
-      this._popover.addEventListener('DOMNodeInserted', this._boundOnChange, false);
-      this._popover.addEventListener('DOMNodeRemoved', this._boundOnChange, false);
-
       window.addEventListener('resize', this._boundOnChange, false);
     });
   }
 
-  detachedCallback() {
+  disconnectedCallback() {
     contentReady(this, () => {
       this._mask.removeEventListener('click', this._boundCancel, false);
 
       this._backButtonHandler.destroy();
       this._backButtonHandler = null;
 
-      this._popover.removeEventListener('DOMNodeInserted', this._boundOnChange, false);
-      this._popover.removeEventListener('DOMNodeRemoved', this._boundOnChange, false);
-
       window.removeEventListener('resize', this._boundOnChange, false);
     });
   }
 
+  static get observedAttributes() {
+    return ['modifier', 'direction', 'animation', 'class'];
+  }
+
   attributeChangedCallback(name, last, current) {
-    if (name === 'modifier') {
-      return ModifierUtil.onModifierChanged(last, current, this, scheme);
-    }
-    if (name === 'direction') {
-      return this._boundOnChange();
-    }
-    if (name === 'animation') {
-      this._initAnimatorFactory();
+    switch (name) {
+      case 'class':
+        if (!this.classList.contains(defaultClassName)) {
+          this.className = defaultClassName + ' ' + current;
+        }
+        break;
+      case 'modifier':
+        ModifierUtil.onModifierChanged(last, current, this, scheme);
+        break;
+      case 'direction':
+        this._boundOnChange();
+        break;
+      case 'animation':
+        this._initAnimatorFactory();
+        break;
     }
   }
 
@@ -588,27 +612,30 @@ class PopoverElement extends BaseElement {
     if (this.cancelable) {
       this.hide({
         callback: () => {
-          util.triggerElementEvent(this, 'cancel');
+          util.triggerElementEvent(this, 'dialog-cancel');
         }
       });
     }
   }
+
+  /**
+   * @param {String} name
+   * @param {PopoverAnimator} Animator
+   */
+  static registerAnimator(name, Animator) {
+    if (!(Animator.prototype instanceof PopoverAnimator)) {
+      throw new Error('"Animator" param must inherit PopoverAnimator');
+    }
+    _animatorDict[name] = Animator;
+  }
+
+  static get animators() {
+    return _animatorDict;
+  }
+
+  static get PopoverAnimator() {
+    return PopoverAnimator;
+  }
 }
 
-window.OnsPopoverElement = document.registerElement('ons-popover', {
-  prototype: PopoverElement.prototype
-});
-
-/**
- * @param {String} name
- * @param {PopoverAnimator} Animator
- */
-window.OnsPopoverElement.registerAnimator = function(name, Animator) {
-  if (!(Animator.prototype instanceof animators.PopoverAnimator)) {
-    throw new Error('"Animator" param must inherit PopoverAnimator');
-  }
-  _animatorDict[name] = Animator;
-};
-
-window.OnsPopoverElement.PopoverAnimator = animators.PopoverAnimator;
-
+customElements.define('ons-popover', PopoverElement);
